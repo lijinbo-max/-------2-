@@ -1,9 +1,6 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
-import streamlit_authenticator as stauth
-import yaml
-from yaml.loader import SafeLoader
 from database import init_db, get_session, User, PersonalInfo, Education, WorkExperience, JobPreference
 from datetime import datetime
 

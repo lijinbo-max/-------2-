@@ -65,6 +65,23 @@ AI助残求职辅助工具是一款专为残障人士设计的求职辅助应用
    docker-compose up
    ```
 
+### 方法三：安装为Python包
+
+1. **安装包**
+   ```bash
+   pip install -e .
+   ```
+
+2. **运行应用**
+   ```bash
+   ai-job-helper
+   ```
+
+## 在线部署
+
+本项目已部署到Streamlit Cloud，您可以直接访问使用：
+- **Streamlit Cloud**: https://share.streamlit.io/lijinbo-max/-------2-
+
 ## 登录测试
 
 - **邮箱**：test@example.com
@@ -75,6 +92,9 @@ AI助残求职辅助工具是一款专为残障人士设计的求职辅助应用
 ```
 ai-job-helper/
 ├── src/
+│   ├── ai_job_helper/     # Python包主目录
+│   │   ├── __init__.py    # 包初始化文件
+│   │   └── main.py        # 包入口文件
 │   ├── app/
 │   │   ├── auth/          # 认证相关代码
 │   │   ├── utils/         # 工具函数
@@ -88,9 +108,31 @@ ai-job-helper/
 ├── .github/               # GitHub Actions配置
 ├── Dockerfile             # Docker配置
 ├── docker-compose.yml     # Docker Compose配置
+├── pyproject.toml         # Python包配置
 ├── requirements.txt       # 依赖文件
 ├── .env                   # 环境变量
+├── LICENSE                # 许可证文件
 └── README.md              # 项目说明
+```
+
+## 发布包
+
+### 构建包
+```bash
+# 安装构建工具
+pip install build
+
+# 构建包
+python -m build
+```
+
+### 发布到PyPI
+```bash
+# 安装发布工具
+pip install twine
+
+# 上传到PyPI
+python -m twine upload dist/*
 ```
 
 ## 许可证

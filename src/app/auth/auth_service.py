@@ -15,7 +15,9 @@ class AuthService:
             if user:
                 if verify_password(password, user.password):
                     logger.info(f"Login successful for user: {email}")
-                    return True, user
+                    # 在会话关闭前提取属性
+                    user_data = {"email": user.email, "name": user.name}
+                    return True, user_data
                 else:
                     logger.warning(f"Login failed: incorrect password for email: {email}")
                     return False, "密码错误"
@@ -31,7 +33,9 @@ class AuthService:
                     session.add(new_user)
                     session.commit()
                     logger.info(f"Created test user: {email}")
-                    return True, new_user
+                    # 在会话关闭前提取属性
+                    user_data = {"email": new_user.email, "name": new_user.name}
+                    return True, user_data
                 else:
                     logger.warning(f"Login failed: user not found for email: {email}")
                     return False, "用户不存在"
@@ -63,7 +67,9 @@ class AuthService:
             session.add(new_user)
             session.commit()
             logger.info(f"Registration successful for user: {email}")
-            return True, new_user
+            # 在会话关闭前提取属性
+            user_data = {"email": new_user.email, "name": new_user.name}
+            return True, user_data
         except Exception as e:
             logger.error(f"Registration error: {str(e)}")
             return False, f"注册失败: {str(e)}"

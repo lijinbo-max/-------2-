@@ -120,6 +120,70 @@ class Resume(Base):
     # 关系
     user = relationship('User', back_populates='resumes')
 
+# 职位申请模型
+class JobApplication(Base):
+    __tablename__ = 'job_applications'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    job_id = Column(Integer, ForeignKey('jobs.id'), nullable=False)
+    resume_id = Column(Integer, ForeignKey('resumes.id'), nullable=False)
+    application_date = Column(Date, default=datetime.utcnow)
+    status = Column(String(50), default='申请中')  # 申请中、已通过、已拒绝
+    
+    # 关系
+    user = relationship('User', backref='job_applications')
+    job = relationship('Job', backref='job_applications')
+    resume = relationship('Resume', backref='job_applications')
+
+# 通知模型
+class Notification(Base):
+    __tablename__ = 'notifications'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    title = Column(String(255), nullable=False)
+    content = Column(Text, nullable=False)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(Date, default=datetime.utcnow)
+    
+    # 关系
+    user = relationship('User', backref='notifications')
+
+# 用户反馈模型
+class Feedback(Base):
+    __tablename__ = 'feedback'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(Date, default=datetime.utcnow)
+    
+    # 关系
+    user = relationship('User', backref='feedback')
+
+# 无障碍设置模型
+class AccessibilitySetting(Base):
+    __tablename__ = 'accessibility_settings'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    font_size = Column(Integer, default=16)
+    contrast = Column(String(50), default='normal')  # normal, high
+    text_to_speech = Column(Boolean, default=False)
+    screen_reader = Column(Boolean, default=False)
+    
+    # 关系
+    user = relationship('User', backref='accessibility_settings')
+
+# 系统设置模型
+class SystemSetting(Base):
+    __tablename__ = 'system_settings'
+    
+    id = Column(Integer, primary_key=True)
+    key = Column(String(255), unique=True, nullable=False)
+    value = Column(Text)
+
 # 初始化数据库
 def init_db():
     Base.metadata.create_all(engine)

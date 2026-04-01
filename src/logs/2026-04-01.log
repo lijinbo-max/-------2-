@@ -1,0 +1,225 @@
+2026-04-01 11:35:36,087 - src.app.auth.auth_service - INFO - Login attempt for email: test@example.com
+2026-04-01 11:35:36,104 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 11:35:36,106 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 11:35:36,107 - sqlalchemy.engine.Engine - INFO - [generated in 0.00042s] ('test@example.com', 1, 0)
+2026-04-01 11:35:36,110 - src.app.auth.auth_service - ERROR - Login error: (sqlite3.OperationalError) no such table: users
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('test@example.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-04-01 11:35:36,110 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 11:36:01,775 - src.app.auth.auth_service - INFO - Login attempt for email: test@example.com
+2026-04-01 11:36:01,776 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 11:36:01,777 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 11:36:01,778 - sqlalchemy.engine.Engine - INFO - [cached since 25.67s ago] ('test@example.com', 1, 0)
+2026-04-01 11:36:01,778 - src.app.auth.auth_service - ERROR - Login error: (sqlite3.OperationalError) no such table: users
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('test@example.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-04-01 11:36:01,779 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 11:36:50,429 - src.app.auth.auth_service - INFO - Login attempt for email: test@example.com
+2026-04-01 11:36:50,430 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 11:36:50,431 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 11:36:50,431 - sqlalchemy.engine.Engine - INFO - [cached since 74.32s ago] ('test@example.com', 1, 0)
+2026-04-01 11:36:50,484 - passlib.handlers.bcrypt - WARNING - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\A2681\AppData\Local\Programs\Python\Python314\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-04-01 11:36:50,490 - src.app.auth.auth_service - ERROR - Login error: password cannot be longer than 72 bytes, truncate manually if necessary (e.g. my_password[:72])
+2026-04-01 11:36:50,490 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 11:37:24,444 - src.app.auth.auth_service - INFO - Login attempt for email: test@example.com
+2026-04-01 11:37:24,445 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 11:37:24,446 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 11:37:24,446 - sqlalchemy.engine.Engine - INFO - [cached since 108.3s ago] ('test@example.com', 1, 0)
+2026-04-01 11:37:24,447 - passlib.handlers.bcrypt - WARNING - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\A2681\AppData\Local\Programs\Python\Python314\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-04-01 11:37:24,453 - src.app.auth.auth_service - ERROR - Login error: password cannot be longer than 72 bytes, truncate manually if necessary (e.g. my_password[:72])
+2026-04-01 11:37:24,454 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 11:38:01,990 - src.app.auth.auth_service - INFO - Login attempt for email: test@example.com
+2026-04-01 11:38:02,011 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 11:38:02,014 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 11:38:02,014 - sqlalchemy.engine.Engine - INFO - [generated in 0.00039s] ('test@example.com', 1, 0)
+2026-04-01 11:38:02,018 - passlib.handlers.bcrypt - WARNING - (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\A2681\AppData\Local\Programs\Python\Python314\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2026-04-01 11:38:02,025 - src.app.auth.auth_service - ERROR - Login error: password cannot be longer than 72 bytes, truncate manually if necessary (e.g. my_password[:72])
+2026-04-01 11:38:02,025 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 11:39:01,748 - src.app.auth.auth_service - INFO - Login attempt for email: test@example.com
+2026-04-01 11:39:01,759 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 11:39:01,762 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 11:39:01,763 - sqlalchemy.engine.Engine - INFO - [generated in 0.00058s] ('test@example.com', 1, 0)
+2026-04-01 11:39:01,765 - sqlalchemy.engine.Engine - INFO - INSERT INTO users (email, name, password, disabled) VALUES (?, ?, ?, ?)
+2026-04-01 11:39:01,765 - sqlalchemy.engine.Engine - INFO - [generated in 0.00032s] ('test@example.com', '≤‚ ‘”√ªß', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 0)
+2026-04-01 11:39:01,769 - sqlalchemy.engine.Engine - INFO - COMMIT
+2026-04-01 11:39:01,837 - src.app.auth.auth_service - INFO - Created test user: test@example.com
+2026-04-01 11:40:51,018 - src.app.auth.auth_service - INFO - Login attempt for email: test@example.com
+2026-04-01 11:40:51,029 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 11:40:51,032 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 11:40:51,032 - sqlalchemy.engine.Engine - INFO - [generated in 0.00038s] ('test@example.com', 1, 0)
+2026-04-01 11:40:51,040 - src.app.auth.auth_service - INFO - Login successful for user: test@example.com
+2026-04-01 11:40:51,040 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 11:41:46,462 - src.app.auth.auth_service - INFO - Login attempt for email: test@example.com
+2026-04-01 11:41:46,464 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 11:41:46,464 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 11:41:46,465 - sqlalchemy.engine.Engine - INFO - [cached since 55.43s ago] ('test@example.com', 1, 0)
+2026-04-01 11:41:46,466 - src.app.auth.auth_service - INFO - Login successful for user: test@example.com
+2026-04-01 11:41:46,466 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 11:42:38,614 - src.app.auth.auth_service - INFO - Login attempt for email: test@example.com
+2026-04-01 11:42:38,627 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 11:42:38,630 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 11:42:38,630 - sqlalchemy.engine.Engine - INFO - [generated in 0.00030s] ('test@example.com', 1, 0)
+2026-04-01 11:42:38,631 - src.app.auth.auth_service - INFO - Login successful for user: test@example.com
+2026-04-01 11:42:38,632 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 11:43:02,658 - src.app.auth.auth_service - INFO - Registration attempt for email: newuser@example.com
+2026-04-01 11:43:02,659 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 11:43:02,660 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 11:43:02,660 - sqlalchemy.engine.Engine - INFO - [cached since 24.03s ago] ('newuser@example.com', 1, 0)
+2026-04-01 11:43:02,662 - sqlalchemy.engine.Engine - INFO - INSERT INTO users (email, name, password, disabled) VALUES (?, ?, ?, ?)
+2026-04-01 11:43:02,662 - sqlalchemy.engine.Engine - INFO - [generated in 0.00038s] ('newuser@example.com', '???', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 0)
+2026-04-01 11:43:02,683 - sqlalchemy.engine.Engine - INFO - COMMIT
+2026-04-01 11:43:02,750 - src.app.auth.auth_service - INFO - Registration successful for user: newuser@example.com
+2026-04-01 11:43:02,751 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 11:43:02,753 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.id = ?
+2026-04-01 11:43:02,753 - sqlalchemy.engine.Engine - INFO - [generated in 0.00044s] (2,)
+2026-04-01 11:43:02,754 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 11:59:47,988 - fastapi - ERROR - Form data requires "python-multipart" to be installed. 
+You can install "python-multipart" with: 
+
+pip install python-multipart
+
+2026-04-01 12:00:37,658 - src.app.auth.auth_service - INFO - Login attempt for email: test@example.com
+2026-04-01 12:00:37,669 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 12:00:37,671 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 12:00:37,672 - sqlalchemy.engine.Engine - INFO - [generated in 0.00031s] ('test@example.com', 1, 0)
+2026-04-01 12:00:37,673 - src.app.auth.auth_service - INFO - Login successful for user: test@example.com
+2026-04-01 12:00:37,673 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 12:00:47,063 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 12:00:47,064 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 12:00:47,064 - sqlalchemy.engine.Engine - INFO - [cached since 9.393s ago] ('test@example.com', 1, 0)
+2026-04-01 12:00:47,068 - sqlalchemy.engine.Engine - INFO - SELECT personal_info.id AS personal_info_id, personal_info.user_id AS personal_info_user_id, personal_info.gender AS personal_info_gender, personal_info.age AS personal_info_age, personal_info.disability_type AS personal_info_disability_type, personal_info.disability_level AS personal_info_disability_level, personal_info.phone AS personal_info_phone, personal_info.address AS personal_info_address 
+FROM personal_info 
+WHERE personal_info.user_id = ?
+ LIMIT ? OFFSET ?
+2026-04-01 12:00:47,068 - sqlalchemy.engine.Engine - INFO - [generated in 0.00050s] (1, 1, 0)
+2026-04-01 12:00:47,072 - sqlalchemy.engine.Engine - INFO - SELECT education.id AS education_id, education.user_id AS education_user_id, education.school AS education_school, education.degree AS education_degree, education.major AS education_major, education.start_date AS education_start_date, education.end_date AS education_end_date, education.description AS education_description 
+FROM education 
+WHERE education.user_id = ?
+ LIMIT ? OFFSET ?
+2026-04-01 12:00:47,073 - sqlalchemy.engine.Engine - INFO - [generated in 0.00080s] (1, 1, 0)
+2026-04-01 12:00:47,078 - sqlalchemy.engine.Engine - INFO - SELECT work_experience.id AS work_experience_id, work_experience.user_id AS work_experience_user_id, work_experience.company AS work_experience_company, work_experience.position AS work_experience_position, work_experience.start_date AS work_experience_start_date, work_experience.end_date AS work_experience_end_date, work_experience.description AS work_experience_description 
+FROM work_experience 
+WHERE work_experience.user_id = ?
+ LIMIT ? OFFSET ?
+2026-04-01 12:00:47,079 - sqlalchemy.engine.Engine - INFO - [generated in 0.00088s] (1, 1, 0)
+2026-04-01 12:01:03,683 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 12:01:03,684 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 12:01:03,684 - sqlalchemy.engine.Engine - INFO - [cached since 26.01s ago] ('test@example.com', 1, 0)
+2026-04-01 12:01:03,685 - sqlalchemy.engine.Engine - INFO - SELECT personal_info.id AS personal_info_id, personal_info.user_id AS personal_info_user_id, personal_info.gender AS personal_info_gender, personal_info.age AS personal_info_age, personal_info.disability_type AS personal_info_disability_type, personal_info.disability_level AS personal_info_disability_level, personal_info.phone AS personal_info_phone, personal_info.address AS personal_info_address 
+FROM personal_info 
+WHERE personal_info.user_id = ?
+ LIMIT ? OFFSET ?
+2026-04-01 12:01:03,685 - sqlalchemy.engine.Engine - INFO - [cached since 16.62s ago] (1, 1, 0)
+2026-04-01 12:01:03,687 - sqlalchemy.engine.Engine - INFO - INSERT INTO personal_info (user_id, gender, age, disability_type, disability_level, phone, address) VALUES (?, ?, ?, ?, ?, ?, ?)
+2026-04-01 12:01:03,687 - sqlalchemy.engine.Engine - INFO - [generated in 0.00026s] (1, '?', 25, '????', '??', '13800138000', '??????')
+2026-04-01 12:01:03,689 - sqlalchemy.engine.Engine - INFO - SELECT education.id AS education_id, education.user_id AS education_user_id, education.school AS education_school, education.degree AS education_degree, education.major AS education_major, education.start_date AS education_start_date, education.end_date AS education_end_date, education.description AS education_description 
+FROM education 
+WHERE education.user_id = ?
+ LIMIT ? OFFSET ?
+2026-04-01 12:01:03,689 - sqlalchemy.engine.Engine - INFO - [cached since 16.62s ago] (1, 1, 0)
+2026-04-01 12:01:03,691 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 12:02:01,383 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 12:02:01,384 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 12:02:01,385 - sqlalchemy.engine.Engine - INFO - [cached since 83.71s ago] ('test@example.com', 1, 0)
+2026-04-01 12:02:01,386 - sqlalchemy.engine.Engine - INFO - SELECT personal_info.id AS personal_info_id, personal_info.user_id AS personal_info_user_id, personal_info.gender AS personal_info_gender, personal_info.age AS personal_info_age, personal_info.disability_type AS personal_info_disability_type, personal_info.disability_level AS personal_info_disability_level, personal_info.phone AS personal_info_phone, personal_info.address AS personal_info_address 
+FROM personal_info 
+WHERE personal_info.user_id = ?
+ LIMIT ? OFFSET ?
+2026-04-01 12:02:01,387 - sqlalchemy.engine.Engine - INFO - [cached since 74.32s ago] (1, 1, 0)
+2026-04-01 12:02:01,389 - sqlalchemy.engine.Engine - INFO - INSERT INTO personal_info (user_id, gender, age, disability_type, disability_level, phone, address) VALUES (?, ?, ?, ?, ?, ?, ?)
+2026-04-01 12:02:01,389 - sqlalchemy.engine.Engine - INFO - [cached since 57.7s ago] (1, '?', 25, '????', '??', '13800138000', '??????')
+2026-04-01 12:02:01,407 - sqlalchemy.engine.Engine - INFO - SELECT education.id AS education_id, education.user_id AS education_user_id, education.school AS education_school, education.degree AS education_degree, education.major AS education_major, education.start_date AS education_start_date, education.end_date AS education_end_date, education.description AS education_description 
+FROM education 
+WHERE education.user_id = ?
+ LIMIT ? OFFSET ?
+2026-04-01 12:02:01,408 - sqlalchemy.engine.Engine - INFO - [cached since 74.34s ago] (1, 1, 0)
+2026-04-01 12:02:01,410 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-04-01 12:02:54,268 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 12:02:54,271 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 12:02:54,272 - sqlalchemy.engine.Engine - INFO - [generated in 0.00040s] ('test@example.com', 1, 0)
+2026-04-01 12:02:54,275 - sqlalchemy.engine.Engine - INFO - SELECT job_preferences.id AS job_preferences_id, job_preferences.user_id AS job_preferences_user_id, job_preferences.industry AS job_preferences_industry, job_preferences.position AS job_preferences_position, job_preferences.salary_min AS job_preferences_salary_min, job_preferences.salary_max AS job_preferences_salary_max, job_preferences.location AS job_preferences_location, job_preferences.work_type AS job_preferences_work_type 
+FROM job_preferences 
+WHERE job_preferences.user_id = ?
+ LIMIT ? OFFSET ?
+2026-04-01 12:02:54,275 - sqlalchemy.engine.Engine - INFO - [generated in 0.00046s] (1, 1, 0)
+2026-04-01 12:05:09,479 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-04-01 12:05:09,482 - sqlalchemy.engine.Engine - INFO - SELECT users.id AS users_id, users.email AS users_email, users.name AS users_name, users.password AS users_password, users.disabled AS users_disabled 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?
+2026-04-01 12:05:09,482 - sqlalchemy.engine.Engine - INFO - [generated in 0.00041s] ('test@example.com', 1, 0)
+2026-04-01 12:05:09,485 - sqlalchemy.engine.Engine - INFO - SELECT job_preferences.id AS job_preferences_id, job_preferences.user_id AS job_preferences_user_id, job_preferences.industry AS job_preferences_industry, job_preferences.position AS job_preferences_position, job_preferences.salary_min AS job_preferences_salary_min, job_preferences.salary_max AS job_preferences_salary_max, job_preferences.location AS job_preferences_location, job_preferences.work_type AS job_preferences_work_type 
+FROM job_preferences 
+WHERE job_preferences.user_id = ?
+ LIMIT ? OFFSET ?
+2026-04-01 12:05:09,485 - sqlalchemy.engine.Engine - INFO - [generated in 0.00037s] (1, 1, 0)

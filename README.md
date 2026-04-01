@@ -1,6 +1,8 @@
 # AI助残求职辅助工具
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://empowered-by-technology-epkz76rmbhk5ccwflhtxla.streamlit.app/)
+[![Deploy to Streamlit Cloud](https://github.com/lijinbo-max/Empowered-by-technology/actions/workflows/deploy.yml/badge.svg)](https://github.com/lijinbo-max/Empowered-by-technology/actions/workflows/deploy.yml)
+[![Visitors](https://visitor-badge.laobi.icu/badge?page_id=lijinbo-max.Empowered-by-technology)](https://empowered-by-technology-epkz76rmbhk5ccwflhtxla.streamlit.app/)
 
 ## 项目概述
 

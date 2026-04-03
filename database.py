@@ -546,3 +546,522 @@ def restore_from_cloud(cloud_provider, bucket_name, cloud_path, **kwargs):
         return restore_database(local_path)
     except Exception as e:
         return False, f"从云存储恢复失败: {str(e)}"
+
+# 记录功能使用情况
+def record_feature_usage(user_id, feature_name):
+    """记录用户功能使用情况"""
+    try:
+        session = get_session()
+        # 查找是否已有该用户的该功能使用记录
+        usage = session.query(FeatureUsage).filter_by(user_id=user_id, feature_name=feature_name).first()
+        
+        if usage:
+            # 更新使用次数和最后使用时间
+            usage.usage_count += 1
+            usage.last_used = datetime.now()
+        else:
+            # 创建新的使用记录
+            usage = FeatureUsage(
+                user_id=user_id,
+                feature_name=feature_name,
+                usage_count=1,
+                last_used=datetime.now()
+            )
+            session.add(usage)
+        
+        session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        # 记录错误但不影响主流程
+        print(f"记录功能使用失败: {str(e)}")
+        return False
+
+# 获取功能使用统计
+def get_feature_usage_stats(user_id):
+    """获取用户功能使用统计"""
+    try:
+        session = get_session()
+        usages = session.query(FeatureUsage).filter_by(user_id=user_id).all()
+        session.close()
+        return usages
+    except Exception as e:
+        print(f"获取功能使用统计失败: {str(e)}")
+        return []
+
+# 添加用户反馈
+def add_user_feedback(user_id, feedback_type, title, content):
+    """添加用户反馈"""
+    try:
+        session = get_session()
+        feedback = Feedback(
+            user_id=user_id,
+            type=feedback_type,
+            title=title,
+            content=content,
+            status='pending'
+        )
+        session.add(feedback)
+        session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        print(f"添加用户反馈失败: {str(e)}")
+        return False
+
+# 添加社区帖子
+def add_community_post(user_id, title, content):
+    """添加社区帖子"""
+    try:
+        session = get_session()
+        post = CommunityPost(
+            user_id=user_id,
+            title=title,
+            content=content
+        )
+        session.add(post)
+        session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        print(f"添加社区帖子失败: {str(e)}")
+        return False
+
+# 获取社区帖子
+def get_community_posts(limit=10):
+    """获取社区帖子"""
+    try:
+        session = get_session()
+        posts = session.query(CommunityPost).order_by(CommunityPost.created_at.desc()).limit(limit).all()
+        session.close()
+        return posts
+    except Exception as e:
+        print(f"获取社区帖子失败: {str(e)}")
+        return []
+
+# 添加社区评论
+def add_community_comment(post_id, user_id, content):
+    """添加社区评论"""
+    try:
+        session = get_session()
+        comment = CommunityComment(
+            post_id=post_id,
+            user_id=user_id,
+            content=content
+        )
+        session.add(comment)
+        session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        print(f"添加社区评论失败: {str(e)}")
+        return False
+
+# 添加第三方服务集成
+def add_third_party_integration(user_id, platform, access_token, refresh_token=None, token_expires_at=None, integration_data=None):
+    """添加第三方服务集成"""
+    try:
+        session = get_session()
+        integration = ThirdPartyIntegration(
+            user_id=user_id,
+            platform=platform,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_expires_at=token_expires_at,
+            integration_data=integration_data
+        )
+        session.add(integration)
+        session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        print(f"添加第三方服务集成失败: {str(e)}")
+        return False
+
+# 获取用户集成
+def get_user_integrations(user_id):
+    """获取用户的第三方服务集成"""
+    try:
+        session = get_session()
+        integrations = session.query(ThirdPartyIntegration).filter_by(user_id=user_id, is_active=True).all()
+        session.close()
+        return integrations
+    except Exception as e:
+        print(f"获取用户集成失败: {str(e)}")
+        return []
+
+# 移除集成
+def remove_integration(integration_id):
+    """移除第三方服务集成"""
+    try:
+        session = get_session()
+        integration = session.query(ThirdPartyIntegration).filter_by(id=integration_id).first()
+        if integration:
+            integration.is_active = False
+            session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        print(f"移除集成失败: {str(e)}")
+        return False
+
+# 创建职业测评
+def create_career_assessment(user_id, assessment_type):
+    """创建职业测评"""
+    try:
+        session = get_session()
+        assessment = CareerAssessment(
+            user_id=user_id,
+            assessment_type=assessment_type,
+            status='pending'
+        )
+        session.add(assessment)
+        session.commit()
+        session.close()
+        return assessment.id
+    except Exception as e:
+        print(f"创建职业测评失败: {str(e)}")
+        return None
+
+# 更新测评结果
+def update_assessment_results(assessment_id, results):
+    """更新测评结果"""
+    try:
+        session = get_session()
+        assessment = session.query(CareerAssessment).filter_by(id=assessment_id).first()
+        if assessment:
+            assessment.results = results
+            assessment.status = 'completed'
+            assessment.completed_at = datetime.now()
+            session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        print(f"更新测评结果失败: {str(e)}")
+        return False
+
+# 获取用户测评
+def get_user_assessments(user_id):
+    """获取用户的职业测评"""
+    try:
+        session = get_session()
+        assessments = session.query(CareerAssessment).filter_by(user_id=user_id).order_by(CareerAssessment.created_at.desc()).all()
+        session.close()
+        return assessments
+    except Exception as e:
+        print(f"获取用户测评失败: {str(e)}")
+        return []
+
+# 添加技能认证
+def add_skill_certification(user_id, certification_name, certification_provider=None, certification_level=None, issue_date=None, expiry_date=None, certificate_url=None):
+    """添加技能认证"""
+    try:
+        session = get_session()
+        certification = SkillCertification(
+            user_id=user_id,
+            certification_name=certification_name,
+            certification_provider=certification_provider,
+            certification_level=certification_level,
+            issue_date=issue_date,
+            expiry_date=expiry_date,
+            certificate_url=certificate_url
+        )
+        session.add(certification)
+        session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        print(f"添加技能认证失败: {str(e)}")
+        return False
+
+# 获取用户认证
+def get_user_certifications(user_id):
+    """获取用户的技能认证"""
+    try:
+        session = get_session()
+        certifications = session.query(SkillCertification).filter_by(user_id=user_id).all()
+        session.close()
+        return certifications
+    except Exception as e:
+        print(f"获取用户认证失败: {str(e)}")
+        return []
+
+# 注册在线课程
+def enroll_online_course(user_id, course_name, course_provider=None, course_url=None, skill_level=None):
+    """注册在线课程"""
+    try:
+        session = get_session()
+        course = OnlineCourse(
+            user_id=user_id,
+            course_name=course_name,
+            course_provider=course_provider,
+            course_url=course_url,
+            skill_level=skill_level
+        )
+        session.add(course)
+        session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        print(f"注册在线课程失败: {str(e)}")
+        return False
+
+# 更新课程进度
+def update_course_progress(course_id, progress):
+    """更新课程进度"""
+    try:
+        session = get_session()
+        course = session.query(OnlineCourse).filter_by(id=course_id).first()
+        if course:
+            course.progress = progress
+            if progress >= 100:
+                course.status = 'completed'
+                course.completed_at = datetime.now()
+            else:
+                course.status = 'in_progress'
+            session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        print(f"更新课程进度失败: {str(e)}")
+        return False
+
+# 获取用户课程
+def get_user_courses(user_id):
+    """获取用户的在线课程"""
+    try:
+        session = get_session()
+        courses = session.query(OnlineCourse).filter_by(user_id=user_id).all()
+        session.close()
+        return courses
+    except Exception as e:
+        print(f"获取用户课程失败: {str(e)}")
+        return []
+
+# 创建企业
+def create_company(name, industry=None, size=None, website=None, description=None):
+    """创建企业"""
+    try:
+        session = get_session()
+        company = Company(
+            name=name,
+            industry=industry,
+            size=size,
+            website=website,
+            description=description
+        )
+        session.add(company)
+        session.commit()
+        session.close()
+        return company.id
+    except Exception as e:
+        print(f"创建企业失败: {str(e)}")
+        return None
+
+# 添加用户到企业
+def add_user_to_company(company_id, user_id, role='member', department=None, position=None):
+    """添加用户到企业"""
+    try:
+        session = get_session()
+        company_user = CompanyUser(
+            company_id=company_id,
+            user_id=user_id,
+            role=role,
+            department=department,
+            position=position
+        )
+        session.add(company_user)
+        session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        print(f"添加用户到企业失败: {str(e)}")
+        return False
+
+# 获取企业用户
+def get_company_users(company_id):
+    """获取企业用户"""
+    try:
+        session = get_session()
+        company_users = session.query(CompanyUser).filter_by(company_id=company_id, is_active=True).all()
+        session.close()
+        return company_users
+    except Exception as e:
+        print(f"获取企业用户失败: {str(e)}")
+        return []
+
+# 更新用户角色
+def update_user_role(company_user_id, role):
+    """更新用户角色"""
+    try:
+        session = get_session()
+        company_user = session.query(CompanyUser).filter_by(id=company_user_id).first()
+        if company_user:
+            company_user.role = role
+            session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        print(f"更新用户角色失败: {str(e)}")
+        return False
+
+# 从企业移除用户
+def remove_user_from_company(company_user_id):
+    """从企业移除用户"""
+    try:
+        session = get_session()
+        company_user = session.query(CompanyUser).filter_by(id=company_user_id).first()
+        if company_user:
+            company_user.is_active = False
+            session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        print(f"从企业移除用户失败: {str(e)}")
+        return False
+
+# 创建团队
+def create_team(company_id, name, description=None, created_by=None):
+    """创建团队"""
+    try:
+        session = get_session()
+        team = Team(
+            company_id=company_id,
+            name=name,
+            description=description,
+            created_by=created_by
+        )
+        session.add(team)
+        session.commit()
+        session.close()
+        return team.id
+    except Exception as e:
+        print(f"创建团队失败: {str(e)}")
+        return None
+
+# 获取企业团队
+def get_company_teams(company_id):
+    """获取企业团队"""
+    try:
+        session = get_session()
+        teams = session.query(Team).filter_by(company_id=company_id).all()
+        session.close()
+        return teams
+    except Exception as e:
+        print(f"获取企业团队失败: {str(e)}")
+        return []
+
+# 添加团队成员
+def add_team_member(team_id, user_id, role='member'):
+    """添加团队成员"""
+    try:
+        session = get_session()
+        team_member = TeamMember(
+            team_id=team_id,
+            user_id=user_id,
+            role=role
+        )
+        session.add(team_member)
+        session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        print(f"添加团队成员失败: {str(e)}")
+        return False
+
+# 获取团队成员
+def get_team_members(team_id):
+    """获取团队成员"""
+    try:
+        session = get_session()
+        members = session.query(TeamMember).filter_by(team_id=team_id).all()
+        session.close()
+        return members
+    except Exception as e:
+        print(f"获取团队成员失败: {str(e)}")
+        return []
+
+# 创建共享资源
+def create_shared_resource(team_id, resource_type, resource_name, resource_data, created_by=None):
+    """创建共享资源"""
+    try:
+        session = get_session()
+        resource = SharedResource(
+            team_id=team_id,
+            resource_type=resource_type,
+            resource_name=resource_name,
+            resource_data=resource_data,
+            created_by=created_by
+        )
+        session.add(resource)
+        session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        print(f"创建共享资源失败: {str(e)}")
+        return False
+
+# 获取团队资源
+def get_team_resources(team_id):
+    """获取团队资源"""
+    try:
+        session = get_session()
+        resources = session.query(SharedResource).filter_by(team_id=team_id).all()
+        session.close()
+        return resources
+    except Exception as e:
+        print(f"获取团队资源失败: {str(e)}")
+        return []
+
+# 生成分析报告
+def generate_analytics_report(company_id, report_type, report_data, period_start=None, period_end=None):
+    """生成分析报告"""
+    try:
+        session = get_session()
+        report = AnalyticsReport(
+            company_id=company_id,
+            report_type=report_type,
+            report_data=report_data,
+            period_start=period_start,
+            period_end=period_end
+        )
+        session.add(report)
+        session.commit()
+        session.close()
+        return report.id
+    except Exception as e:
+        print(f"生成分析报告失败: {str(e)}")
+        return None
+
+# 获取企业报告
+def get_company_reports(company_id):
+    """获取企业报告"""
+    try:
+        session = get_session()
+        reports = session.query(AnalyticsReport).filter_by(company_id=company_id).order_by(AnalyticsReport.generated_at.desc()).all()
+        session.close()
+        return reports
+    except Exception as e:
+        print(f"获取企业报告失败: {str(e)}")
+        return []
+
+# 记录用户活动
+def log_activity(user_id, activity_type, activity_data=None, company_id=None, ip_address=None, user_agent=None):
+    """记录用户活动"""
+    try:
+        session = get_session()
+        activity = ActivityLog(
+            user_id=user_id,
+            company_id=company_id,
+            activity_type=activity_type,
+            activity_data=activity_data,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        session.add(activity)
+        session.commit()
+        session.close()
+        return True
+    except Exception as e:
+        print(f"记录用户活动失败: {str(e)}")
+        return False

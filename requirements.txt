@@ -9,4 +9,5 @@ pyyaml
 alembic
 streamlit-authenticator
 PyPDF2
+python-docx
 zai-sdk

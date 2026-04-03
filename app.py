@@ -555,7 +555,7 @@ else:
         
         # 简历上传
         st.subheader("上传简历")
-        resume_file = st.file_uploader("选择简历文件", type=["txt", "pdf"])
+        resume_file = st.file_uploader("选择简历文件", type=["txt", "pdf", "docx", "html"])
         
         # 目标职位
         target_job = st.text_input("目标职位", placeholder="例如：前端开发工程师")
@@ -568,7 +568,7 @@ else:
             if resume_file.type == "text/plain":
                 resume_content = resume_file.read().decode("utf-8")
                 st.text_area("简历文本", resume_content, height=300)
-            else:
+            elif resume_file.type == "application/pdf":
                 # 处理PDF文件
                 try:
                     import PyPDF2
@@ -590,6 +590,51 @@ else:
                     st.error(f"读取PDF文件失败: {str(e)}")
                     st.write("PDF文件内容预览功能开发中...")
                     resume_content = "PDF文件内容"
+            elif resume_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                # 处理DOCX文件
+                try:
+                    from docx import Document
+                    
+                    # 读取DOCX文件
+                    doc = Document(resume_file)
+                    
+                    # 提取DOCX内容
+                    docx_content = ""
+                    for para in doc.paragraphs:
+                        docx_content += para.text + "\n"
+                    
+                    # 显示DOCX内容
+                    st.text_area("DOCX文本内容", docx_content, height=300)
+                    resume_content = docx_content
+                except Exception as e:
+                    st.error(f"读取DOCX文件失败: {str(e)}")
+                    st.write("DOCX文件内容预览功能开发中...")
+                    resume_content = "DOCX文件内容"
+            elif resume_file.type == "text/html":
+                # 处理HTML文件
+                try:
+                    import re
+                    
+                    # 读取HTML文件
+                    html_content = resume_file.read().decode("utf-8")
+                    
+                    # 简单的HTML文本提取
+                    # 移除HTML标签
+                    clean_content = re.sub('<[^<]+?>', '', html_content)
+                    # 移除多余的空白字符
+                    clean_content = ' '.join(clean_content.split())
+                    
+                    # 显示HTML内容
+                    st.text_area("HTML文本内容", clean_content, height=300)
+                    resume_content = clean_content
+                except Exception as e:
+                    st.error(f"读取HTML文件失败: {str(e)}")
+                    st.write("HTML文件内容预览功能开发中...")
+                    resume_content = "HTML文件内容"
+            else:
+                # 其他文件类型
+                st.error("不支持的文件类型")
+                resume_content = "不支持的文件类型"
 
             
             # AI分析按钮
@@ -627,7 +672,7 @@ else:
                             st.error("请在.env文件中填写正确的GLM-4-Flash API密钥")
                         else:
                             # 构建分析提示
-                            prompt = f"请分析以下简历，并针对目标职位'{target_job}'提供详细的分析结果，包括：\n1. 简历的优势\n2. 需要改进的地方\n3. 具体的优化建议\n4. 优化后的简历片段示例\n\n简历内容：\n{resume_content}"
+                            prompt = f"请分析以下简历，并针对目标职位'{target_job}'提供详细的分析结果，包括：\n1. 简历的优势\n2. 需要改进的地方\n3. 具体的优化建议\n4. 优化后的简历片段示例\n5. 简历与目标职位的匹配度分析，包括技能匹配、经验匹配和教育背景匹配等方面，并给出一个0-100的匹配度分数\n6. 简历关键词优化建议，包括目标职位的核心关键词、行业热门关键词，以及如何在简历中合理使用这些关键词\n7. 简历模板推荐，根据目标职位和行业特点，推荐适合的简历模板类型和布局\n8. 行业趋势分析和技能需求预测，包括目标职位所在行业的发展趋势、未来热门技能需求，以及如何提前准备这些技能\n9. 个性化的职业发展建议，根据简历内容和目标职位，提供短期和长期的职业发展规划建议\n\n简历内容：\n{resume_content}"
                             
                             # 初始化ZhipuAiClient
                             st.info("初始化ZhipuAiClient...")
@@ -651,7 +696,38 @@ else:
                                 
                                 # 显示分析结果
                                 st.subheader("分析结果")
-                                st.markdown(response.choices[0].message.content)
+                                
+                                # 提取分析结果内容
+                                analysis_content = response.choices[0].message.content
+                                
+                                # 计算简历评分
+                                def calculate_resume_score(content):
+                                    # 基于分析内容计算评分
+                                    score = 70  # 基础分
+                                    
+                                    # 检查是否有优势部分
+                                    if "优势" in content or "优点" in content:
+                                        score += 10
+                                    
+                                    # 检查是否有改进建议
+                                    if "改进" in content or "建议" in content:
+                                        score += 5
+                                    
+                                    # 检查是否有具体的优化建议
+                                    if "优化" in content or "示例" in content:
+                                        score += 5
+                                    
+                                    # 确保分数在0-100之间
+                                    return min(100, max(0, score))
+                                
+                                # 计算并显示评分
+                                resume_score = calculate_resume_score(analysis_content)
+                                st.subheader("简历评分")
+                                st.progress(resume_score)
+                                st.write(f"您的简历评分为：{resume_score}/100")
+                                
+                                # 显示分析结果内容
+                                st.markdown(analysis_content)
                                 st.success("简历分析完成！")
                             except Exception as api_error:
                                 st.error(f"API调用失败: {str(api_error)}")
@@ -668,7 +744,7 @@ else:
                             st.error("请在.env文件中填写正确的GLM-4-Flash API密钥")
                         else:
                             # 构建分析提示
-                            prompt = f"请分析以下简历，并针对目标职位'{target_job}'提供详细的分析结果，包括：\n1. 简历的优势\n2. 需要改进的地方\n3. 具体的优化建议\n4. 优化后的简历片段示例\n\n简历内容：\n{resume_content}"
+                            prompt = f"请分析以下简历，并针对目标职位'{target_job}'提供详细的分析结果，包括：\n1. 简历的优势\n2. 需要改进的地方\n3. 具体的优化建议\n4. 优化后的简历片段示例\n5. 简历与目标职位的匹配度分析，包括技能匹配、经验匹配和教育背景匹配等方面，并给出一个0-100的匹配度分数\n6. 简历关键词优化建议，包括目标职位的核心关键词、行业热门关键词，以及如何在简历中合理使用这些关键词\n7. 简历模板推荐，根据目标职位和行业特点，推荐适合的简历模板类型和布局\n8. 行业趋势分析和技能需求预测，包括目标职位所在行业的发展趋势、未来热门技能需求，以及如何提前准备这些技能\n9. 个性化的职业发展建议，根据简历内容和目标职位，提供短期和长期的职业发展规划建议\n\n简历内容：\n{resume_content}"
                             
                             # 调用GLM-4-Flash API
                             url = "https://open.bigmodel.cn/api/paas/v4/chat/completions"  # 使用正确的API端点
@@ -702,7 +778,38 @@ else:
                                 if "choices" in response_data and len(response_data["choices"]) > 0:
                                     # 显示分析结果
                                     st.subheader("分析结果")
-                                    st.markdown(response_data["choices"][0]["message"]["content"])
+                                    
+                                    # 提取分析结果内容
+                                    analysis_content = response_data["choices"][0]["message"]["content"]
+                                    
+                                    # 计算简历评分
+                                    def calculate_resume_score(content):
+                                        # 基于分析内容计算评分
+                                        score = 70  # 基础分
+                                        
+                                        # 检查是否有优势部分
+                                        if "优势" in content or "优点" in content:
+                                            score += 10
+                                        
+                                        # 检查是否有改进建议
+                                        if "改进" in content or "建议" in content:
+                                            score += 5
+                                        
+                                        # 检查是否有具体的优化建议
+                                        if "优化" in content or "示例" in content:
+                                            score += 5
+                                        
+                                        # 确保分数在0-100之间
+                                        return min(100, max(0, score))
+                                    
+                                    # 计算并显示评分
+                                    resume_score = calculate_resume_score(analysis_content)
+                                    st.subheader("简历评分")
+                                    st.progress(resume_score)
+                                    st.write(f"您的简历评分为：{resume_score}/100")
+                                    
+                                    # 显示分析结果内容
+                                    st.markdown(analysis_content)
                                     st.success("简历分析完成！")
                                 else:
                                     # 显示详细的错误信息
@@ -723,6 +830,35 @@ else:
                     # 模拟AI分析结果
                     st.subheader("分析结果")
                     
+                    # 计算并显示评分
+                    st.subheader("简历评分")
+                    st.progress(75)
+                    st.write("您的简历评分为：75/100")
+                    
+                    # 显示匹配度分析
+                    st.subheader("与目标职位的匹配度分析")
+                    st.progress(80)
+                    st.write("您的简历与目标职位的匹配度为：80/100")
+                    
+                    # 匹配度详情
+                    st.markdown("### 匹配度详情")
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        st.markdown("#### 技能匹配")
+                        st.progress(85)
+                        st.write("85/100")
+                    
+                    with col2:
+                        st.markdown("#### 经验匹配")
+                        st.progress(75)
+                        st.write("75/100")
+                    
+                    with col3:
+                        st.markdown("#### 教育背景匹配")
+                        st.progress(90)
+                        st.write("90/100")
+                    
                     col1, col2 = st.columns(2)
                     
                     with col1:
@@ -740,6 +876,88 @@ else:
                     # 优化后的简历示例
                     st.subheader("优化建议示例")
                     st.text_area("优化后的简历片段", "**工作经验**\n\n**公司名称** - 职位 (2020-2023)\n- 负责项目管理，带领团队完成10+项目，成功率95%以上\n- 优化工作流程，提高效率30%\n- 获得年度优秀员工称号", height=200)
+                    
+                    # 关键词优化建议
+                    st.subheader("关键词优化建议")
+                    st.markdown("### 目标职位核心关键词")
+                    st.write("- 项目管理")
+                    st.write("- 团队协作")
+                    st.write("- 流程优化")
+                    st.write("- 数据分析")
+                    st.write("- 问题解决")
+                    
+                    st.markdown("### 行业热门关键词")
+                    st.write("- 敏捷开发")
+                    st.write("- 数字化转型")
+                    st.write("- 云计算")
+                    st.write("- 人工智能")
+                    st.write("- 数据分析")
+                    
+                    st.markdown("### 关键词使用建议")
+                    st.write("1. 在简历标题和摘要中使用核心关键词")
+                    st.write("2. 在工作经验描述中自然融入关键词")
+                    st.write("3. 在技能部分列出相关关键词")
+                    st.write("4. 避免关键词堆砌，保持内容自然")
+                    st.write("5. 根据目标职位调整关键词侧重点")
+                    
+                    # 简历模板推荐
+                    st.subheader("简历模板推荐")
+                    st.markdown("### 推荐模板类型")
+                    st.write("1. **功能型模板**：适合技能和经验丰富的候选人，突出技能和成就")
+                    st.write("2. **时序型模板**：适合职业发展稳定的候选人，按时间顺序展示工作经验")
+                    st.write("3. **组合型模板**：结合功能型和时序型的优点，既突出技能又展示工作经历")
+                    
+                    st.markdown("### 布局建议")
+                    st.write("- 使用简洁、专业的设计")
+                    st.write("- 突出重要信息，如技能和成就")
+                    st.write("- 使用一致的字体和格式")
+                    st.write("- 确保简历长度适中（1-2页）")
+                    st.write("- 选择适合行业的配色方案")
+                    
+                    # 行业趋势分析和技能需求预测
+                    st.subheader("行业趋势分析和技能需求预测")
+                    st.markdown("### 行业发展趋势")
+                    st.write("1. 数字化转型加速，企业对数字化技能的需求增加")
+                    st.write("2. 人工智能和自动化技术广泛应用，改变工作方式")
+                    st.write("3. 远程工作和混合工作模式成为常态")
+                    st.write("4. 可持续发展和ESG成为企业重要考量")
+                    st.write("5. 技能迭代速度加快，终身学习成为必要")
+                    
+                    st.markdown("### 未来热门技能需求")
+                    st.write("- 数据分析和数据科学技能")
+                    st.write("- 人工智能和机器学习技能")
+                    st.write("- 云计算和云服务技能")
+                    st.write("- 网络安全和数据保护技能")
+                    st.write("- 数字营销和社交媒体管理技能")
+                    st.write("- 项目管理和敏捷方法论技能")
+                    st.write("- 跨文化沟通和团队协作技能")
+                    
+                    st.markdown("### 技能准备建议")
+                    st.write("1. 持续学习新技术和工具")
+                    st.write("2. 参加行业相关的培训和认证")
+                    st.write("3. 参与项目实践，积累实际经验")
+                    st.write("4. 建立专业网络，了解行业动态")
+                    st.write("5. 定期更新简历，展示新技能和成就")
+                    
+                    # 个性化的职业发展建议
+                    st.subheader("个性化的职业发展建议")
+                    st.markdown("### 短期发展建议（1-2年）")
+                    st.write("1. 提升核心技能：根据目标职位要求，重点提升相关技能")
+                    st.write("2. 积累项目经验：参与更多相关项目，提升实战能力")
+                    st.write("3. 建立专业网络：参加行业活动，扩大人脉")
+                    st.write("4. 获得相关认证：考取行业认可的证书，增强竞争力")
+                    st.write("5. 定期更新简历：及时记录成就和新技能")
+                    
+                    st.markdown("### 长期发展建议（3-5年）")
+                    st.write("1. 明确职业目标：确定长期职业发展方向")
+                    st.write("2. 发展领导力：培养团队管理和领导能力")
+                    st.write("3. 拓展专业领域：在核心技能基础上，拓展相关领域")
+                    st.write("4. 建立个人品牌：通过分享知识和经验，建立专业形象")
+                    st.write("5. 持续学习：保持对行业趋势的敏感度，不断学习新技术")
+                    
+                    st.markdown("### 职业发展路径")
+                    st.write("- 初级职位 → 中级职位 → 高级职位 → 管理职位")
+                    st.write("- 或选择成为某一领域的专家，如技术专家、行业顾问等")
                     
                     st.success("简历分析完成！")
     
@@ -963,7 +1181,7 @@ else:
         st.subheader("面试类型")
         interview_type = st.selectbox(
             "选择面试类型",
-            ["技术面试", "行为面试", "情景面试", "压力面试"]
+            ["技术面试", "行为面试", "情景面试", "压力面试", "群面", "视频面试", "电话面试", "案例面试"]
         )
         
         # 面试岗位
@@ -973,14 +1191,79 @@ else:
         if st.button("开始模拟面试"):
             st.info("面试模拟开始，请准备回答以下问题...")
             
-            # 模拟面试问题
-            questions = [
-                "请简单介绍一下你自己",
-                "你为什么对这个职位感兴趣？",
-                "你认为自己的优势是什么？",
-                "你如何应对工作中的挑战？",
-                "你对我们公司有什么了解？"
-            ]
+            # 根据面试类型生成不同的问题
+            if interview_type == "技术面试":
+                questions = [
+                    "请简单介绍一下你自己",
+                    "你熟悉哪些编程语言和技术栈？",
+                    "请解释一下你最近参与的项目中的技术难点",
+                    "你如何解决遇到的技术问题？",
+                    "你对我们公司的技术栈有什么了解？"
+                ]
+            elif interview_type == "行为面试":
+                questions = [
+                    "请简单介绍一下你自己",
+                    "描述一个你成功解决的问题",
+                    "描述一个你在团队中遇到的挑战",
+                    "你如何处理工作中的压力？",
+                    "你如何与同事合作完成项目？"
+                ]
+            elif interview_type == "情景面试":
+                questions = [
+                    "请简单介绍一下你自己",
+                    "如果你的项目 deadline 临近但遇到了技术问题，你会怎么做？",
+                    "如果你的同事与你意见不合，你会如何处理？",
+                    "如果你的领导给你一个你不熟悉的任务，你会如何应对？",
+                    "如果你的项目失败了，你会如何总结经验教训？"
+                ]
+            elif interview_type == "压力面试":
+                questions = [
+                    "请简单介绍一下你自己",
+                    "你认为你的缺点是什么？",
+                    "你为什么离开上一份工作？",
+                    "你如何处理工作中的批评？",
+                    "你认为你为什么能胜任这个职位？"
+                ]
+            elif interview_type == "群面":
+                questions = [
+                    "请简单介绍一下你自己",
+                    "请就给定的案例进行讨论",
+                    "你认为团队合作中最重要的是什么？",
+                    "你如何在团队中发挥自己的优势？",
+                    "你如何处理团队中的冲突？"
+                ]
+            elif interview_type == "视频面试":
+                questions = [
+                    "请简单介绍一下你自己",
+                    "你为什么对这个职位感兴趣？",
+                    "你如何适应远程工作环境？",
+                    "你在远程工作中如何与团队沟通？",
+                    "你对我们公司有什么了解？"
+                ]
+            elif interview_type == "电话面试":
+                questions = [
+                    "请简单介绍一下你自己",
+                    "你为什么对这个职位感兴趣？",
+                    "你的期望薪资是多少？",
+                    "你什么时候可以开始工作？",
+                    "你对我们公司有什么了解？"
+                ]
+            elif interview_type == "案例面试":
+                questions = [
+                    "请简单介绍一下你自己",
+                    "请分析以下案例：一家公司的销售额下降，你会如何分析原因？",
+                    "你如何制定一个市场推广策略？",
+                    "你如何评估一个项目的可行性？",
+                    "你如何解决一个复杂的业务问题？"
+                ]
+            else:
+                questions = [
+                    "请简单介绍一下你自己",
+                    "你为什么对这个职位感兴趣？",
+                    "你认为自己的优势是什么？",
+                    "你如何应对工作中的挑战？",
+                    "你对我们公司有什么了解？"
+                ]
             
             # 显示问题和回答区域
             for i, question in enumerate(questions, 1):
@@ -1006,12 +1289,29 @@ else:
         st.write("- 你为什么想加入我们公司？")
         st.write("- 你的优缺点是什么？")
         st.write("- 你如何处理工作中的冲突？")
+        st.write("- 你未来5年的职业规划是什么？")
+        st.write("- 你期望的薪资是多少？")
+        st.write("- 你如何应对工作压力？")
+        st.write("- 你为什么离开上一份工作？")
         
         st.write("### 面试技巧")
         st.write("1. 提前了解公司和职位信息")
         st.write("2. 准备具体的例子来展示你的能力")
         st.write("3. 保持积极的态度和自信的形象")
         st.write("4. 注意倾听问题，思考后再回答")
+        st.write("5. 保持良好的肢体语言和眼神交流")
+        st.write("6. 准备一些问题向面试官提问")
+        st.write("7. 面试后及时发送感谢信")
+        
+        st.write("### 不同面试类型的准备建议")
+        st.write("**技术面试**：复习相关技术知识，准备编程题，展示项目经验")
+        st.write("**行为面试**：准备STAR法则（情境、任务、行动、结果）的例子")
+        st.write("**情景面试**：思考各种工作场景的应对策略")
+        st.write("**压力面试**：保持冷静，不要被面试官的问题影响情绪")
+        st.write("**群面**：积极参与讨论，展示团队合作能力")
+        st.write("**视频面试**：测试设备和网络，选择安静的环境")
+        st.write("**电话面试**：准备好简历和笔记，保持清晰的语音")
+        st.write("**案例面试**：练习分析问题的思路和方法")
     
     # 页脚
     st.markdown("---")

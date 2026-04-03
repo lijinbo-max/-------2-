@@ -7,6 +7,18 @@ from datetime import datetime
 # 加载环境变量
 load_dotenv()
 
+# 直接从.env文件中读取API密钥
+def get_api_key_from_env_file():
+    try:
+        with open('.env', 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('GLM4_API_KEY='):
+                    return line.split('=', 1)[1]
+    except Exception as e:
+        st.error(f"读取.env文件失败: {str(e)}")
+    return None
+
 # 初始化数据库
 init_db()
 
@@ -278,61 +290,62 @@ init_test_user()
 # 获取用户数据
 users = get_users_from_db()
 
-# 简单的登录表单
-st.title("🤝 AI助残求职辅助工具")
-
-# 登录表单
-with st.form("login_form"):
-    st.subheader("用户登录")
-    email = st.text_input("邮箱")
-    password = st.text_input("密码", type="password")
-    login_button = st.form_submit_button("登录")
-
-# 认证逻辑
-if login_button:
-    # 从数据库获取用户
-    session = get_session()
-    try:
-        user = session.query(User).filter_by(email=email).first()
-        if user:
-            # 简单的密码比较（实际项目中应使用哈希验证）
-            if password == "123456":  # 测试密码
-                st.session_state["authentication_status"] = True
-                st.session_state["name"] = user.name
-                st.session_state["username"] = user.email
-                st.success(f"登录成功！欢迎回来，{user.name}！")
-                # 重新加载页面
-                st.rerun()
-            else:
-                st.error("密码错误")
-        else:
-            # 如果用户不存在，创建默认测试用户
-            if email == "test@example.com" and password == "123456":
-                new_user = User(
-                    email="test@example.com",
-                    name="测试用户",
-                    password="123456",  # 实际项目中应使用哈希密码
-                    disabled=False
-                )
-                session.add(new_user)
-                session.commit()
-                st.session_state["authentication_status"] = True
-                st.session_state["name"] = "测试用户"
-                st.session_state["username"] = "test@example.com"
-                st.success("登录成功！欢迎使用AI助残求职辅助工具！")
-                # 重新加载页面
-                st.rerun()
-            else:
-                st.error("用户不存在")
-    finally:
-        session.close()
-
 # 检查认证状态
-if "authentication_status" in st.session_state and st.session_state["authentication_status"]:
+if "authentication_status" not in st.session_state or not st.session_state["authentication_status"]:
+    # 简单的登录表单
+    st.title("🤝 AI助残求职辅助工具")
+    
+    # 登录表单
+    with st.form("login_form"):
+        st.subheader("用户登录")
+        email = st.text_input("邮箱")
+        password = st.text_input("密码", type="password")
+        login_button = st.form_submit_button("登录")
+    
+    # 认证逻辑
+    if login_button:
+        # 从数据库获取用户
+        session = get_session()
+        try:
+            user = session.query(User).filter_by(email=email).first()
+            if user:
+                # 简单的密码比较（实际项目中应使用哈希验证）
+                if password == "123456":  # 测试密码
+                    st.session_state["authentication_status"] = True
+                    st.session_state["name"] = user.name
+                    st.session_state["username"] = user.email
+                    st.success(f"登录成功！欢迎回来，{user.name}！")
+                    # 重新加载页面
+                    st.rerun()
+                else:
+                    st.error("密码错误")
+            else:
+                # 如果用户不存在，创建默认测试用户
+                if email == "test@example.com" and password == "123456":
+                    new_user = User(
+                        email="test@example.com",
+                        name="测试用户",
+                        password="123456",  # 实际项目中应使用哈希密码
+                        disabled=False
+                    )
+                    session.add(new_user)
+                    session.commit()
+                    st.session_state["authentication_status"] = True
+                    st.session_state["name"] = "测试用户"
+                    st.session_state["username"] = "test@example.com"
+                    st.success("登录成功！欢迎使用AI助残求职辅助工具！")
+                    # 重新加载页面
+                    st.rerun()
+                else:
+                    st.error("用户不存在")
+        finally:
+            session.close()
+else:
     name = st.session_state["name"]
     username = st.session_state["username"]
     authentication_status = st.session_state["authentication_status"]
     # 主页面
+    st.title("🤝 AI助残求职辅助工具")
     st.write(f"欢迎回来，{name}！")
     
     # 侧边栏导航
@@ -556,54 +569,156 @@ if "authentication_status" in st.session_state and st.session_state["authenticat
                 resume_content = resume_file.read().decode("utf-8")
                 st.text_area("简历文本", resume_content, height=300)
             else:
-                st.write("PDF文件内容预览功能开发中...")
+                # 处理PDF文件
+                try:
+                    import PyPDF2
+                    
+                    # 读取PDF文件
+                    pdf_reader = PyPDF2.PdfReader(resume_file)
+                    num_pages = len(pdf_reader.pages)
+                    
+                    # 提取PDF内容
+                    pdf_content = ""
+                    for page_num in range(num_pages):
+                        page = pdf_reader.pages[page_num]
+                        pdf_content += page.extract_text()
+                    
+                    # 显示PDF内容
+                    st.text_area("PDF文本内容", pdf_content, height=300)
+                    resume_content = pdf_content
+                except Exception as e:
+                    st.error(f"读取PDF文件失败: {str(e)}")
+                    st.write("PDF文件内容预览功能开发中...")
+                    resume_content = "PDF文件内容"
+
             
             # AI分析按钮
             if st.button("开始AI分析"):
                 st.info("AI正在分析您的简历...")
                 
-                # 集成通义千问API进行真实的简历分析
+                # 集成GLM-4-Flash API进行真实的简历分析
                 try:
-                    import requests
-                    
-                    # 获取API密钥
-                    api_key = os.getenv("QIANWEN_API_KEY")
+                    # 直接从.env文件中读取API密钥
+                    api_key = get_api_key_from_env_file()
+                    # 检查API密钥是否配置
                     if not api_key:
-                        st.error("请在.env文件中配置通义千问API密钥")
-                    else:
-                        # 构建分析提示
-                        prompt = f"请分析以下简历，并针对目标职位'{target_job}'提供详细的分析结果，包括：\n1. 简历的优势\n2. 需要改进的地方\n3. 具体的优化建议\n4. 优化后的简历片段示例\n\n简历内容：\n{resume_content}"
+                        st.error("请在.env文件中配置GLM-4-Flash API密钥")
+                        # 显示模拟分析结果
+                        st.subheader("分析结果")
+                        st.markdown("**简历优势**：\n- 教育背景良好\n- 相关工作经验丰富\n- 技能与目标职位匹配度高\n\n**需要改进的地方**：\n- 简历格式需要优化\n- 工作描述不够具体\n- 缺乏量化的成果展示\n\n**优化建议**：\n- 使用STAR法则（情境、任务、行动、结果）描述工作经验\n- 添加具体的项目成果和数据\n- 突出与目标职位相关的技能和经验\n\n**优化后的简历片段**：\n在担任软件工程师期间，负责开发和维护公司核心产品，通过优化算法，将系统响应时间减少了30%，提高了用户满意度。")
+                        st.success("简历分析完成！")
+                        pass
+                    elif api_key == "your-api-key-here":
+                        st.error("请在.env文件中填写正确的GLM-4-Flash API密钥")
+                        # 显示模拟分析结果
+                        st.subheader("分析结果")
+                        st.markdown("**简历优势**：\n- 教育背景良好\n- 相关工作经验丰富\n- 技能与目标职位匹配度高\n\n**需要改进的地方**：\n- 简历格式需要优化\n- 工作描述不够具体\n- 缺乏量化的成果展示\n\n**优化建议**：\n- 使用STAR法则（情境、任务、行动、结果）描述工作经验\n- 添加具体的项目成果和数据\n- 突出与目标职位相关的技能和经验\n\n**优化后的简历片段**：\n在担任软件工程师期间，负责开发和维护公司核心产品，通过优化算法，将系统响应时间减少了30%，提高了用户满意度。")
+                        st.success("简历分析完成！")
+                        pass
+                    
+                    # 尝试使用zai-sdk调用GLM-4-Flash API
+                    try:
+                        from zai import ZhipuAiClient
                         
-                        # 调用通义千问API
-                        url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"
-                        headers = {
-                            "Content-Type": "application/json",
-                            "Authorization": f"Bearer {api_key}"
-                        }
-                        data = {
-                            "model": "qwen-turbo",
-                            "input": {
-                                "prompt": prompt
-                            },
-                            "parameters": {
+                        # 检查API密钥
+                        if not api_key:
+                            st.error("请在.env文件中配置GLM-4-Flash API密钥")
+                        elif api_key == "your-api-key-here":
+                            st.error("请在.env文件中填写正确的GLM-4-Flash API密钥")
+                        else:
+                            # 构建分析提示
+                            prompt = f"请分析以下简历，并针对目标职位'{target_job}'提供详细的分析结果，包括：\n1. 简历的优势\n2. 需要改进的地方\n3. 具体的优化建议\n4. 优化后的简历片段示例\n\n简历内容：\n{resume_content}"
+                            
+                            # 初始化ZhipuAiClient
+                            st.info("初始化ZhipuAiClient...")
+                            client = ZhipuAiClient(api_key=api_key)
+                            st.info("ZhipuAiClient初始化成功")
+                            
+                            # 调用GLM-4-Flash API
+                            st.info("调用GLM-4-Flash API...")
+                            try:
+                                response = client.chat.completions.create(
+                                    model="glm-4-flash",
+                                    messages=[
+                                        {
+                                            "role": "user",
+                                            "content": prompt
+                                        }
+                                    ],
+                                    temperature=0.7
+                                )
+                                st.info("API调用成功")
+                                
+                                # 显示分析结果
+                                st.subheader("分析结果")
+                                st.markdown(response.choices[0].message.content)
+                                st.success("简历分析完成！")
+                            except Exception as api_error:
+                                st.error(f"API调用失败: {str(api_error)}")
+                                st.info(f"错误类型: {type(api_error).__name__}")
+                    except ImportError as e:
+                        st.warning(f"无法导入ZhipuAiClient: {str(e)}")
+                        # 如果没有安装zai-sdk，使用requests库调用
+                        import requests
+                        
+                        # 检查API密钥
+                        if not api_key:
+                            st.error("请在.env文件中配置GLM-4-Flash API密钥")
+                        elif api_key == "your-api-key-here":
+                            st.error("请在.env文件中填写正确的GLM-4-Flash API密钥")
+                        else:
+                            # 构建分析提示
+                            prompt = f"请分析以下简历，并针对目标职位'{target_job}'提供详细的分析结果，包括：\n1. 简历的优势\n2. 需要改进的地方\n3. 具体的优化建议\n4. 优化后的简历片段示例\n\n简历内容：\n{resume_content}"
+                            
+                            # 调用GLM-4-Flash API
+                            url = "https://open.bigmodel.cn/api/paas/v4/chat/completions"  # 使用正确的API端点
+                            headers = {
+                                "Content-Type": "application/json",
+                                "Authorization": f"Bearer {api_key}"
+                            }
+                            data = {
+                                "model": "glm-4-flash",
+                                "messages": [
+                                    {
+                                        "role": "user",
+                                        "content": prompt
+                                    }
+                                ],
                                 "temperature": 0.7
                             }
-                        }
-                        
-                        response = requests.post(url, headers=headers, json=data)
-                        response_data = response.json()
-                        
-                        if "output" in response_data and "text" in response_data["output"]:
-                            # 显示分析结果
-                            st.subheader("分析结果")
-                            st.markdown(response_data["output"]["text"])
-                            st.success("简历分析完成！")
-                        else:
-                            st.error(f"API调用失败: {response_data.get('message', '未知错误')}")
+                            
+                            # 打印调试信息
+                            st.info(f"API URL: {url}")
+                            st.info(f"请求头: {headers}")
+                            
+                            try:
+                                response = requests.post(url, headers=headers, json=data)
+                                st.info(f"响应状态码: {response.status_code}")
+                                st.info(f"响应头: {dict(response.headers)}")
+                                
+                                response_data = response.json()
+                                st.info(f"响应内容: {response_data}")
+                                
+                                if "choices" in response_data and len(response_data["choices"]) > 0:
+                                    # 显示分析结果
+                                    st.subheader("分析结果")
+                                    st.markdown(response_data["choices"][0]["message"]["content"])
+                                    st.success("简历分析完成！")
+                                else:
+                                    # 显示详细的错误信息
+                                    error_message = response_data.get('error', {}).get('message', '未知错误')
+                                    st.error(f"API调用失败: {error_message}")
+                                    # 显示完整的响应内容，以便调试
+                                    st.info(f"完整响应: {response_data}")
+                            except Exception as req_error:
+                                st.error(f"请求失败: {str(req_error)}")
                         
                 except Exception as e:
                     # 如果API调用失败，使用模拟结果
                     st.warning(f"AI分析暂时不可用，显示模拟分析结果: {str(e)}")
+                    st.info(f"错误类型: {type(e).__name__}")
+                    import traceback
+                    st.info(f"错误堆栈: {traceback.format_exc()}")
                     
                     # 模拟AI分析结果
                     st.subheader("分析结果")
@@ -901,8 +1016,3 @@ if "authentication_status" in st.session_state and st.session_state["authenticat
     # 页脚
     st.markdown("---")
     st.write("© 2026 AI助残求职辅助工具 | 为残障人士提供平等的就业机会")
-
-elif "authentication_status" in st.session_state and st.session_state["authentication_status"] == False:
-    st.error("用户名或密码错误")
-elif "authentication_status" not in st.session_state:
-    st.warning("请输入用户名和密码")

@@ -8,5 +8,5 @@ services:
     volumes:
       - .:/app
     environment:
-      - QIANWEN_API_KEY=${QIANWEN_API_KEY}
+      - GLM4_API_KEY=${GLM4_API_KEY}
     restart: unless-stopped

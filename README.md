@@ -25,7 +25,7 @@ AI助残求职辅助工具是一款专为残障人士设计的求职辅助应用
 - **数据库**：SQLite
 - **ORM**：SQLAlchemy
 - **密码加密**：Passlib
-- **AI API**：通义千问
+- **AI API**：GLM-4-Flash
 - **部署**：Docker, GitHub Actions
 
 ## 安装和运行
@@ -35,7 +35,7 @@ AI助残求职辅助工具是一款专为残障人士设计的求职辅助应用
 1. **克隆项目**
    ```bash
    git clone <repository-url>
-   cd ai-job-helper
+   cd AI
    ```
 
 2. **安装依赖**
@@ -45,11 +45,11 @@ AI助残求职辅助工具是一款专为残障人士设计的求职辅助应用
 
 3. **配置环境变量**
    - 复制 `.env.example` 文件为 `.env`
-   - 在 `.env` 文件中配置通义千问API密钥
+   - 在 `.env` 文件中配置GLM-4-Flash API密钥
 
 4. **运行应用**
    ```bash
-   streamlit run src/app/main.py
+   streamlit run app.py
    ```
 
 ### 方法二：Docker运行
@@ -61,7 +61,7 @@ AI助残求职辅助工具是一款专为残障人士设计的求职辅助应用
 
 2. **运行容器**
    ```bash
-   docker run -p 8501:8501 -e QIANWEN_API_KEY=<your-api-key> ai-job-helper
+   docker run -p 8501:8501 -e GLM4_API_KEY=<your-api-key> ai-job-helper
    ```
 
 3. **或使用docker-compose**
@@ -69,22 +69,10 @@ AI助残求职辅助工具是一款专为残障人士设计的求职辅助应用
    docker-compose up
    ```
 
-### 方法三：安装为Python包
-
-1. **安装包**
-   ```bash
-   pip install -e .
-   ```
-
-2. **运行应用**
-   ```bash
-   ai-job-helper
-   ```
-
 ## 在线部署
 
 本项目已部署到Streamlit Cloud，您可以直接访问使用：
-- **Streamlit Cloud**: https://share.streamlit.io/lijinbo-max/-------2-
+- **Streamlit Cloud**: https://empowered-by-technology-epkz76rmbhk5ccwflhtxla.streamlit.app/
 
 ## 登录测试
 
@@ -94,27 +82,45 @@ AI助残求职辅助工具是一款专为残障人士设计的求职辅助应用
 ## 项目结构
 
 ```
-ai-job-helper/
+AI/
 ├── src/
 │   ├── ai_job_helper/     # Python包主目录
 │   │   ├── __init__.py    # 包初始化文件
 │   │   └── main.py        # 包入口文件
 │   ├── app/
 │   │   ├── auth/          # 认证相关代码
+│   │   │   ├── auth_service.py
+│   │   │   └── auth_utils.py
 │   │   ├── utils/         # 工具函数
-│   │   ├── pages/         # 页面代码
+│   │   │   ├── logger.py
+│   │   │   └── style.css
 │   │   └── main.py        # 主应用文件
 │   ├── database/          # 数据库相关代码
 │   │   ├── migrations/    # 数据库迁移文件
+│   │   ├── __init__.py
 │   │   └── models.py      # 数据库模型
 ├── tests/                 # 测试代码
-├── logs/                  # 日志文件
+│   ├── run_tests.py
+│   ├── test_auth_service.py
+│   └── test_auth_utils.py
 ├── .github/               # GitHub Actions配置
+│   └── workflows/
+│       ├── ci-cd.yml
+│       └── deploy.yml
+├── .postman/              # Postman配置
+│   └── resources.yaml
+├── postman/               # Postman配置
+│   └── globals/
+│       └── workspace.globals.yaml
 ├── Dockerfile             # Docker配置
 ├── docker-compose.yml     # Docker Compose配置
 ├── pyproject.toml         # Python包配置
 ├── requirements.txt       # 依赖文件
-├── .env                   # 环境变量
+├── .env.example           # 环境变量示例
+├── alembic.ini            # Alembic配置
+├── api.py                 # API文件
+├── app.py                 # 主应用入口
+├── database.py            # 数据库配置
 ├── LICENSE                # 许可证文件
 └── README.md              # 项目说明
 ```

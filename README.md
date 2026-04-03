@@ -11,7 +11,8 @@ AI助残求职辅助工具是一款专为残障人士设计的求职辅助应用
 ## 功能特点
 
 - **个人信息管理**：填写和管理个人基本信息、教育背景和工作经验
-- **简历分析**：上传简历文件，获取AI分析和优化建议
+- **简历分析**：上传简历文件（支持txt和PDF格式），获取AI分析和优化建议
+- **PDF文件预览**：支持PDF文件内容预览和提取
 - **职位推荐**：根据用户技能和偏好推荐合适的职位
 - **面试模拟**：选择面试类型，进行模拟面试并获取反馈
 - **无障碍功能**：调整字体大小、对比度和其他无障碍选项
@@ -25,6 +26,7 @@ AI助残求职辅助工具是一款专为残障人士设计的求职辅助应用
 - **数据库**：SQLite
 - **ORM**：SQLAlchemy
 - **密码加密**：Passlib
+- **PDF处理**：PyPDF2
 - **AI API**：GLM-4-Flash
 - **部署**：Docker, GitHub Actions
 
@@ -97,6 +99,8 @@ AI/
 │   │   └── main.py        # 主应用文件
 │   ├── database/          # 数据库相关代码
 │   │   ├── migrations/    # 数据库迁移文件
+│   │   │   ├── env.py
+│   │   │   └── script.py.mako
 │   │   ├── __init__.py
 │   │   └── models.py      # 数据库模型
 ├── tests/                 # 测试代码
@@ -117,12 +121,16 @@ AI/
 ├── pyproject.toml         # Python包配置
 ├── requirements.txt       # 依赖文件
 ├── .env.example           # 环境变量示例
+├── .gitignore             # Git忽略文件
 ├── alembic.ini            # Alembic配置
 ├── api.py                 # API文件
 ├── app.py                 # 主应用入口
 ├── database.py            # 数据库配置
 ├── LICENSE                # 许可证文件
-└── README.md              # 项目说明
+├── README.md              # 项目说明
+├── test_glm4.py           # GLM-4-Flash API测试脚本
+├── test_glm4.ps1          # PowerShell测试脚本
+└── test_glm4_fixed.ps1    # 修复后的测试脚本
 ```
 
 ## 发布包

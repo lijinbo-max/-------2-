@@ -1,0 +1,75 @@
+name: ai_job_helper_mobile
+description: AI助残求职辅助工具移动应用
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # UI组件
+  cupertino_icons: ^1.0.2
+  flutter_svg: ^2.0.7
+  
+  # 状态管理
+  provider: ^6.0.5
+  
+  # 网络请求
+  http: ^1.1.0
+  dio: ^5.3.2
+  
+  # 本地存储
+  shared_preferences: ^2.2.2
+  sqflite: ^2.3.0
+  
+  # 认证
+  flutter_secure_storage: ^8.0.0
+  
+  # 推送通知
+  firebase_messaging: ^14.6.6
+  flutter_local_notifications: ^15.1.1
+  
+  # 网络状态
+  connectivity_plus: ^5.0.2
+  
+  # 文件处理
+  file_picker: ^6.1.1
+  path_provider: ^2.1.1
+  
+  # 无障碍功能
+  flutter_tts: ^3.8.3
+  speech_to_text: ^6.1.1
+  
+  # 工具
+  intl: ^0.18.1
+  url_launcher: ^6.1.11
+  share_plus: ^7.0.2
+  
+  # 图表
+  fl_chart: ^0.63.0
+  
+  # 加载动画
+  lottie: ^2.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/lottie/
+  
+  fonts:
+    - family: CustomFont
+      fonts:
+        - asset: assets/fonts/CustomFont-Regular.ttf
+        - asset: assets/fonts/CustomFont-Bold.ttf
+          weight: 700

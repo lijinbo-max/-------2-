@@ -1,5 +1,6 @@
 version: '3'
 
+# 基础配置
 services:
   app:
     build: .
@@ -10,3 +11,28 @@ services:
     environment:
       - GLM4_API_KEY=${GLM4_API_KEY}
     restart: unless-stopped
+
+# 开发环境
+development:
+  extends:
+    service: app
+  environment:
+    - ENVIRONMENT=development
+    - DEBUG=True
+
+# 测试环境
+test:
+  extends:
+    service: app
+  environment:
+    - ENVIRONMENT=test
+    - DEBUG=False
+
+# 生产环境
+production:
+  extends:
+    service: app
+  environment:
+    - ENVIRONMENT=production
+    - DEBUG=False
+  restart: always

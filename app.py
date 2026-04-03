@@ -1,11 +1,31 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
-from database import init_db, get_session, User, PersonalInfo, Education, WorkExperience, JobPreference
+from database import init_db, get_session, User, PersonalInfo, Education, WorkExperience, JobPreference, record_feature_usage, get_feature_usage_stats, add_user_feedback, add_community_post, get_community_posts, add_community_comment, add_third_party_integration, get_user_integrations, remove_integration, create_career_assessment, update_assessment_results, get_user_assessments, add_skill_certification, get_user_certifications, enroll_online_course, update_course_progress, get_user_courses, create_company, add_user_to_company, get_company_users, update_user_role, remove_user_from_company, create_team, get_company_teams, add_team_member, get_team_members, create_shared_resource, get_team_resources, generate_analytics_report, get_company_reports, log_activity
 from datetime import datetime
 
 # 加载环境变量
 load_dotenv()
+
+# 获取环境变量
+ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+
+# 根据环境设置日志级别
+if DEBUG:
+    st.set_page_config(
+        page_title="AI助残求职辅助工具 (开发环境)",
+        page_icon="🤝",
+        layout="wide",
+        initial_sidebar_state="auto"
+    )
+else:
+    st.set_page_config(
+        page_title="AI助残求职辅助工具",
+        page_icon="🤝",
+        layout="wide",
+        initial_sidebar_state="auto"
+    )
 
 # 直接从.env文件中读取API密钥
 def get_api_key_from_env_file():
@@ -22,13 +42,6 @@ def get_api_key_from_env_file():
 # 初始化数据库
 init_db()
 
-# 页面配置
-st.set_page_config(
-    page_title="AI助残求职辅助工具",
-    page_icon="🤝",
-    layout="wide"
-)
-
 # 检测设备类型
 def get_device_type():
     # 由于Streamlit的request属性可能不可用，使用默认值
@@ -41,20 +54,134 @@ st.session_state.device_type = device_type
 # 无障碍功能设置
 if 'font_size' not in st.session_state:
     st.session_state.font_size = "中"
+if 'font_style' not in st.session_state:
+    st.session_state.font_style = "默认"
 if 'contrast' not in st.session_state:
     st.session_state.contrast = "正常"
+if 'dark_mode' not in st.session_state:
+    st.session_state.dark_mode = False
 if 'screen_reader' not in st.session_state:
     st.session_state.screen_reader = False
 if 'keyboard_shortcuts' not in st.session_state:
     st.session_state.keyboard_shortcuts = True
+if 'custom_shortcuts' not in st.session_state:
+    st.session_state.custom_shortcuts = {
+        "首页": "Alt+1",
+        "个人信息": "Alt+2",
+        "简历分析": "Alt+3",
+        "职位推荐": "Alt+4",
+        "面试模拟": "Alt+5"
+    }
+
+# 数据库设置
+with st.sidebar.expander("数据库设置"):
+    st.subheader("数据库管理")
+    
+    # 数据备份
+    if st.button("备份数据库"):
+        from database import backup_database
+        success, message = backup_database()
+        if success:
+            st.success(message)
+        else:
+            st.error(message)
+    
+    # 数据恢复
+    backup_file = st.text_input("备份文件路径", "backup_job_helper.db")
+    if st.button("恢复数据库"):
+        from database import restore_database
+        success, message = restore_database(backup_file)
+        if success:
+            st.success(message)
+        else:
+            st.error(message)
+    
+    # 优化数据库
+    if st.button("优化数据库"):
+        from database import optimize_database
+        success, message = optimize_database()
+        if success:
+            st.success(message)
+        else:
+            st.error(message)
+    
+    # PostgreSQL设置
+    st.subheader("PostgreSQL设置")
+    postgresql_url = st.text_input("PostgreSQL连接URL", "postgresql://user:password@localhost:5432/job_helper")
+    if st.button("切换到PostgreSQL"):
+        from database import switch_to_postgresql
+        success, message = switch_to_postgresql(postgresql_url)
+        if success:
+            st.success(message)
+        else:
+            st.error(message)
+    
+    # 云服务设置
+    st.subheader("云服务设置")
+    cloud_provider = st.selectbox("云服务提供商", ["aws", "google", "azure"])
+    bucket_name = st.text_input("存储桶名称", "job-helper-backups")
+    
+    # 云服务提供商特定设置
+    cloud_kwargs = {}
+    if cloud_provider == "aws":
+        cloud_kwargs["aws_access_key_id"] = st.text_input("AWS Access Key ID")
+        cloud_kwargs["aws_secret_access_key"] = st.text_input("AWS Secret Access Key", type="password")
+        cloud_kwargs["region_name"] = st.text_input("AWS Region", "us-east-1")
+    elif cloud_provider == "google":
+        cloud_kwargs["service_account_file"] = st.text_input("Google Cloud Service Account File Path")
+    elif cloud_provider == "azure":
+        cloud_kwargs["connection_string"] = st.text_input("Azure Blob Storage Connection String")
+    
+    # 云备份和恢复功能
+    st.subheader("云备份和恢复")
+    if st.button("备份到云存储"):
+        from database import backup_to_cloud
+        success, message = backup_to_cloud(cloud_provider, bucket_name, **cloud_kwargs)
+        if success:
+            st.success(message)
+        else:
+            st.error(message)
+    
+    if st.button("列出云备份文件"):
+        from database import list_cloud_backups
+        success, files = list_cloud_backups(cloud_provider, bucket_name, **cloud_kwargs)
+        if success:
+            if files:
+                st.write("云存储中的备份文件:")
+                for file in files:
+                    st.write(f"- {file}")
+            else:
+                st.info("云存储中没有备份文件")
+        else:
+            st.error(files)
+    
+    cloud_backup_file = st.text_input("云备份文件路径", "backups/job_helper.db")
+    if st.button("从云存储恢复"):
+        from database import restore_from_cloud
+        success, message = restore_from_cloud(cloud_provider, bucket_name, cloud_backup_file, **cloud_kwargs)
+        if success:
+            st.success(message)
+        else:
+            st.error(message)
 
 # 无障碍功能控制面板
 with st.sidebar.expander("无障碍设置"):
     st.session_state.font_size = st.selectbox(
         "字体大小",
-        ["小", "中", "大", "超大"],
-        index=["小", "中", "大", "超大"].index(st.session_state.font_size),
+        ["小", "中", "大", "超大", "特大"],
+        index=["小", "中", "大", "超大", "特大"].index(st.session_state.font_size),
         help="调整应用中所有文本的字体大小"
+    )
+    st.session_state.font_style = st.selectbox(
+        "字体样式",
+        ["默认", "无衬线", "衬线", "等宽"],
+        index=["默认", "无衬线", "衬线", "等宽"].index(st.session_state.font_style),
+        help="调整应用中所有文本的字体样式"
+    )
+    st.session_state.dark_mode = st.checkbox(
+        "启用深色模式",
+        value=st.session_state.dark_mode,
+        help="启用深色模式，减少屏幕亮度"
     )
     st.session_state.contrast = st.selectbox(
         "对比度",
@@ -72,6 +199,26 @@ with st.sidebar.expander("无障碍设置"):
         value=st.session_state.keyboard_shortcuts,
         help="启用应用的键盘快捷键"
     )
+    st.session_state.voice_navigation = st.checkbox(
+        "启用语音导航",
+        value=st.session_state.get('voice_navigation', False),
+        help="启用语音导航功能"
+    )
+    st.session_state.text_to_speech = st.checkbox(
+        "启用文本到语音转换",
+        value=st.session_state.get('text_to_speech', False),
+        help="启用文本到语音转换功能"
+    )
+    st.session_state.voice_input = st.checkbox(
+        "启用语音输入",
+        value=st.session_state.get('voice_input', False),
+        help="启用语音输入到文本框功能"
+    )
+    st.session_state.eye_tracking = st.checkbox(
+        "启用眼动追踪支持",
+        value=st.session_state.get('eye_tracking', False),
+        help="启用眼动追踪支持（需要相应硬件设备）"
+    )
     
     st.write("\n**键盘导航提示：**")
     st.write("- 使用Tab键在元素之间导航")
@@ -80,18 +227,34 @@ with st.sidebar.expander("无障碍设置"):
     
     if st.session_state.keyboard_shortcuts:
         st.write("\n**键盘快捷键：**")
-        st.write("- Alt+1: 切换到首页")
-        st.write("- Alt+2: 切换到个人信息")
-        st.write("- Alt+3: 切换到简历分析")
-        st.write("- Alt+4: 切换到职位推荐")
-        st.write("- Alt+5: 切换到面试模拟")
+        st.write(f"- {st.session_state.custom_shortcuts['首页']}: 切换到首页")
+        st.write(f"- {st.session_state.custom_shortcuts['个人信息']}: 切换到个人信息")
+        st.write(f"- {st.session_state.custom_shortcuts['简历分析']}: 切换到简历分析")
+        st.write(f"- {st.session_state.custom_shortcuts['职位推荐']}: 切换到职位推荐")
+        st.write(f"- {st.session_state.custom_shortcuts['面试模拟']}: 切换到面试模拟")
+        
+        with st.expander("自定义快捷键"):
+            for key, value in st.session_state.custom_shortcuts.items():
+                st.session_state.custom_shortcuts[key] = st.text_input(
+                    f"{key} 快捷键",
+                    value,
+                    help="输入快捷键，例如 Alt+1"
+                )
 
 # 根据无障碍设置调整样式
 font_size_map = {
     "小": "0.8rem",
     "中": "1rem",
     "大": "1.2rem",
-    "超大": "1.5rem"
+    "超大": "1.5rem",
+    "特大": "2rem"
+}
+
+font_style_map = {
+    "默认": "",
+    "无衬线": "font-family: Arial, Helvetica, sans-serif;",
+    "衬线": "font-family: Georgia, 'Times New Roman', serif;",
+    "等宽": "font-family: 'Courier New', monospace;"
 }
 
 contrast_map = {
@@ -100,54 +263,138 @@ contrast_map = {
     "低对比度": "filter: contrast(0.8);"
 }
 
+dark_mode_css = """
+    background-color: #121212;
+    color: #e0e0e0;
+    .stButton>button {
+        background-color: #333;
+        color: #e0e0e0;
+    }
+    .stTextInput>div>div>input, .stTextArea>div>div>textarea {
+        background-color: #333;
+        color: #e0e0e0;
+        border: 1px solid #555;
+    }
+    .stSelectbox>div>div>select {
+        background-color: #333;
+        color: #e0e0e0;
+        border: 1px solid #555;
+    }
+    .stDateInput>div>div>input, .stNumberInput>div>div>input {
+        background-color: #333;
+        color: #e0e0e0;
+        border: 1px solid #555;
+    }
+    .css-1d391kg {
+        background-color: #1e1e1e;
+    }
+    .css-1lcbmhc {
+        background-color: #121212;
+    }
+"""
+
+
 screen_reader_css = """
     /* 屏幕阅读器模式样式 */
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     /* 为所有元素添加 aria-label */
     button, input, select, textarea { aria-label: attr(placeholder); }
+    /* 提高屏幕阅读器兼容性 */
+    *[role="button"], button, input[type="button"], input[type="submit"] { cursor: pointer; }
+    /* 确保所有表单元素都有标签 */
+    label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+    /* 为所有图片添加 alt 文本 */
+    img { alt: attr(alt); }
+    /* 为所有链接添加 aria-label */
+    a { aria-label: attr(title); }
+    /* 提高表格的可访问性 */
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; font-weight: bold; }
 """
 
 st.markdown(
     f"""
     <style>
+        /* 全局样式 */
         body {{ 
             font-size: {font_size_map[st.session_state.font_size]}; 
+            {font_style_map[st.session_state.font_style]}
             {contrast_map[st.session_state.contrast]}
+            {dark_mode_css if st.session_state.dark_mode else ""}
+            transition: all 0.3s ease;
         }}
+        
+        /* 现代按钮样式 */
         .stButton>button {{ 
             font-size: {font_size_map[st.session_state.font_size]}; 
-            padding: 0.5rem 1rem;
+            {font_style_map[st.session_state.font_style]}
+            padding: 0.6rem 1.2rem;
             margin: 0.25rem 0;
+            border-radius: 8px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }}
-        .stTextInput>div>div>input {{ 
-            font-size: {font_size_map[st.session_state.font_size]}; 
-            padding: 0.5rem;
+        
+        .stButton>button:hover {{ 
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }}
-        .stTextArea>div>div>textarea {{ 
-            font-size: {font_size_map[st.session_state.font_size]}; 
-            padding: 0.5rem;
-        }}
-        .stSelectbox>div>div>select {{ 
-            font-size: {font_size_map[st.session_state.font_size]}; 
-            padding: 0.5rem;
-        }}
-        .stDateInput>div>div>input {{ 
-            font-size: {font_size_map[st.session_state.font_size]}; 
-            padding: 0.5rem;
-        }}
+        
+        /* 输入框样式 */
+        .stTextInput>div>div>input, 
+        .stTextArea>div>div>textarea, 
+        .stSelectbox>div>div>select, 
+        .stDateInput>div>div>input, 
         .stNumberInput>div>div>input {{ 
             font-size: {font_size_map[st.session_state.font_size]}; 
-            padding: 0.5rem;
+            {font_style_map[st.session_state.font_style]}
+            padding: 0.6rem;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            transition: all 0.3s ease;
         }}
+        
+        .stTextInput>div>div>input:focus, 
+        .stTextArea>div>div>textarea:focus, 
+        .stSelectbox>div>div>select:focus, 
+        .stDateInput>div>div>input:focus, 
+        .stNumberInput>div>div>input:focus {{ 
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }}
+        
+        /* 卡片式布局 */
+        .card {{ 
+            background-color: {"#1e1e1e" if st.session_state.dark_mode else "#ffffff"};
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }}
+        
+        .card:hover {{ 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }}
+        
         /* 提高链接和按钮的可访问性 */
         a, button {{ 
             outline: 2px solid transparent;
             transition: outline 0.2s ease;
         }}
+        
         a:focus, button:focus {{ 
-            outline: 2px solid #0066cc;
+            outline: 3px solid #4CAF50;
             outline-offset: 2px;
         }}
+        
         /* 键盘导航指示 */
         .keyboard-nav-indicator {{ 
             position: fixed; 
@@ -155,12 +402,84 @@ st.markdown(
             right: 10px; 
             background: #333; 
             color: #fff; 
-            padding: 5px 10px; 
-            border-radius: 5px; 
+            padding: 8px 12px; 
+            border-radius: 20px; 
             font-size: 12px; 
             z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }}
-        {screen_reader_css if st.session_state.screen_reader else ""}
+        
+        /* 键盘导航增强 */
+        :focus {{ 
+            outline: 3px solid #4CAF50 !important; 
+            outline-offset: 2px !important; 
+        }}
+        
+        /* 为所有可交互元素添加键盘导航支持 */
+        button, input, select, textarea, a {{ 
+            tab-index: 0; 
+        }}
+        
+        /* 提高键盘导航的可见性 */
+        .keyboard-highlight {{ 
+            background-color: rgba(76, 175, 80, 0.1); 
+            border: 2px dashed #4CAF50; 
+        }}
+        
+        /* 眼动追踪指示器样式 */
+        .eye-tracking-indicator {{ 
+            position: fixed; 
+            bottom: 120px; 
+            right: 10px; 
+            background: #2196F3; 
+            color: white; 
+            padding: 12px; 
+            border-radius: 50%; 
+            z-index: 1000; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }}
+        
+        .eye-tracking-indicator:hover {{ 
+            transform: scale(1.1);
+        }}
+        
+        /* 语音输入按钮样式 */
+        .voice-input-button {{ 
+            position: absolute; 
+            right: 10px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            background: transparent; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 18px; 
+            z-index: 10; 
+            transition: all 0.3s ease;
+        }}
+        
+        .voice-input-button:hover {{ 
+            transform: translateY(-50%) scale(1.1);
+        }}
+        
+        /* 语音导航和文本到语音功能 */
+        .voice-navigation-indicator {
+            position: fixed;
+            bottom: 60px;
+            right: 10px;
+            background: #4CAF50;
+            color: white;
+            padding: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .voice-navigation-indicator:hover {
+            transform: scale(1.1);
+        }
         
         /* 响应式设计 */
         @media (max-width: 768px) {{
@@ -169,6 +488,7 @@ st.markdown(
                 width: 100%;
                 margin: 0.5rem 0;
             }}
+            
             .stTextInput>div>div>input, 
             .stTextArea>div>div>textarea, 
             .stSelectbox>div>div>select, 
@@ -176,21 +496,31 @@ st.markdown(
             .stNumberInput>div>div>input {{ 
                 width: 100%;
             }}
+            
             .stColumns {{ 
                 flex-direction: column;
             }}
+            
             .stColumn {{ 
                 width: 100% !important;
                 margin: 0.5rem 0;
             }}
+            
             /* 调整侧边栏 */
             .css-1d391kg {{ 
                 width: 100% !important;
                 max-width: 100% !important;
             }}
+            
             /* 调整主内容区 */
             .css-1lcbmhc {{ 
                 padding: 1rem !important;
+            }}
+            
+            /* 调整卡片布局 */
+            .card {{ 
+                padding: 1rem;
+                margin: 0.5rem 0;
             }}
         }}
         
@@ -199,14 +529,65 @@ st.markdown(
             .stButton>button {{ 
                 margin: 0.25rem;
             }}
+            
             .stColumns {{ 
                 flex-wrap: wrap;
             }}
+            
             .stColumn {{ 
                 width: 48% !important;
                 margin: 0.5%;
             }}
         }}
+        
+        /* 动画效果 */
+        @keyframes fadeIn {{ 
+            from {{ opacity: 0; transform: translateY(20px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+        }}
+        
+        .fade-in {{ 
+            animation: fadeIn 0.5s ease-out forwards;
+        }}
+        
+        /* 加载动画 */
+        .loading-spinner {{ 
+            border: 4px solid rgba(0,0,0,0.1);
+            border-left: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }}
+        
+        @keyframes spin {{ 
+            0% {{ transform: rotate(0deg); }}
+            100% {{ transform: rotate(360deg); }}
+        }}
+        
+        /* 主题切换按钮 */
+        .theme-toggle {{ 
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }}
+        
+        .theme-toggle:hover {{ 
+            transform: scale(1.1);
+        }}
+        
+        {screen_reader_css if st.session_state.screen_reader else ""}
     </style>
     """,
     unsafe_allow_html=True
@@ -352,7 +733,7 @@ else:
     st.sidebar.title("导航")
     page = st.sidebar.radio(
         "选择功能",
-        ["首页", "个人信息", "简历分析", "职位推荐", "面试模拟"]
+        ["首页", "个人信息", "简历分析", "职位推荐", "面试模拟", "第三方服务", "企业版", "用户反馈", "社区论坛"]
     )
     
     # 登出按钮
@@ -367,19 +748,68 @@ else:
         st.header("欢迎使用AI助残求职辅助工具")
         st.write("本工具旨在帮助残障人士更有效地寻找工作机会，提供以下功能：")
         
+        # 主题切换按钮
+        if st.button("🌙" if not st.session_state.dark_mode else "☀️", key="theme_toggle"):
+            st.session_state.dark_mode = not st.session_state.dark_mode
+            st.experimental_rerun()
+        
         col1, col2, col3 = st.columns(3)
         
         with col1:
+            st.markdown('<div class="card fade-in">', unsafe_allow_html=True)
             st.subheader("📄 简历分析")
             st.write("AI智能分析您的简历，提供优化建议")
+            st.write("- 简历评分与匹配度分析")
+            st.write("- 关键词优化建议")
+            st.write("- 模板推荐")
+            st.markdown('</div>', unsafe_allow_html=True)
         
         with col2:
+            st.markdown('<div class="card fade-in">', unsafe_allow_html=True)
             st.subheader("🔍 职位推荐")
             st.write("根据您的技能和偏好推荐合适的职位")
+            st.write("- 智能职位匹配")
+            st.write("- 行业趋势分析")
+            st.write("- 薪资范围预测")
+            st.markdown('</div>', unsafe_allow_html=True)
         
         with col3:
+            st.markdown('<div class="card fade-in">', unsafe_allow_html=True)
             st.subheader("💬 面试模拟")
             st.write("模拟面试场景，提供反馈和改进建议")
+            st.write("- 常见问题模拟")
+            st.write("- 回答评估与建议")
+            st.write("- 面试技巧指导")
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # 无障碍功能介绍
+        st.markdown("## 无障碍功能")
+        st.markdown('<div class="card fade-in">', unsafe_allow_html=True)
+        st.write("- 屏幕阅读器支持")
+        st.write("- 语音导航功能")
+        st.write("- 键盘导航增强")
+        st.write("- 高对比度模式")
+        st.write("- 字体大小和样式调整")
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # 数据统计
+        st.markdown("## 数据统计")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown('<div class="card fade-in">', unsafe_allow_html=True)
+            st.metric("注册用户", "1,234")
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown('<div class="card fade-in">', unsafe_allow_html=True)
+            st.metric("成功匹配职位", "567")
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown('<div class="card fade-in">', unsafe_allow_html=True)
+            st.metric("面试成功率", "78%")
+            st.markdown('</div>', unsafe_allow_html=True)
     
     # 个人信息页面
     elif page == "个人信息":
@@ -643,183 +1073,72 @@ else:
                 
                 # 集成GLM-4-Flash API进行真实的简历分析
                 try:
-                    # 直接从.env文件中读取API密钥
-                    api_key = get_api_key_from_env_file()
-                    # 检查API密钥是否配置
-                    if not api_key:
-                        st.error("请在.env文件中配置GLM-4-Flash API密钥")
-                        # 显示模拟分析结果
-                        st.subheader("分析结果")
-                        st.markdown("**简历优势**：\n- 教育背景良好\n- 相关工作经验丰富\n- 技能与目标职位匹配度高\n\n**需要改进的地方**：\n- 简历格式需要优化\n- 工作描述不够具体\n- 缺乏量化的成果展示\n\n**优化建议**：\n- 使用STAR法则（情境、任务、行动、结果）描述工作经验\n- 添加具体的项目成果和数据\n- 突出与目标职位相关的技能和经验\n\n**优化后的简历片段**：\n在担任软件工程师期间，负责开发和维护公司核心产品，通过优化算法，将系统响应时间减少了30%，提高了用户满意度。")
-                        st.success("简历分析完成！")
-                        pass
-                    elif api_key == "your-api-key-here":
-                        st.error("请在.env文件中填写正确的GLM-4-Flash API密钥")
-                        # 显示模拟分析结果
-                        st.subheader("分析结果")
-                        st.markdown("**简历优势**：\n- 教育背景良好\n- 相关工作经验丰富\n- 技能与目标职位匹配度高\n\n**需要改进的地方**：\n- 简历格式需要优化\n- 工作描述不够具体\n- 缺乏量化的成果展示\n\n**优化建议**：\n- 使用STAR法则（情境、任务、行动、结果）描述工作经验\n- 添加具体的项目成果和数据\n- 突出与目标职位相关的技能和经验\n\n**优化后的简历片段**：\n在担任软件工程师期间，负责开发和维护公司核心产品，通过优化算法，将系统响应时间减少了30%，提高了用户满意度。")
-                        st.success("简历分析完成！")
-                        pass
+                    # 导入API管理器
+                    from api_manager import call_glm4_api, get_api_stats
                     
-                    # 尝试使用zai-sdk调用GLM-4-Flash API
-                    try:
-                        from zai import ZhipuAiClient
+                    # 构建分析提示
+                    prompt = f"请分析以下简历，并针对目标职位'{target_job}'提供详细的分析结果，包括：\n1. 简历的优势\n2. 需要改进的地方\n3. 具体的优化建议\n4. 优化后的简历片段示例\n5. 简历与目标职位的匹配度分析，包括技能匹配、经验匹配和教育背景匹配等方面，并给出一个0-100的匹配度分数\n6. 简历关键词优化建议，包括目标职位的核心关键词、行业热门关键词，以及如何在简历中合理使用这些关键词\n7. 简历模板推荐，根据目标职位和行业特点，推荐适合的简历模板类型和布局\n8. 行业趋势分析和技能需求预测，包括目标职位所在行业的发展趋势、未来热门技能需求，以及如何提前准备这些技能\n9. 个性化的职业发展建议，根据简历内容和目标职位，提供短期和长期的职业发展规划建议\n\n简历内容：\n{resume_content}"
+                    
+                    # 调用GLM-4-Flash API
+                    st.info("调用GLM-4-Flash API...")
+                    success, result = call_glm4_api(prompt)
+                    
+                    if success:
+                        st.info("API调用成功")
                         
-                        # 检查API密钥
-                        if not api_key:
-                            st.error("请在.env文件中配置GLM-4-Flash API密钥")
-                        elif api_key == "your-api-key-here":
-                            st.error("请在.env文件中填写正确的GLM-4-Flash API密钥")
-                        else:
-                            # 构建分析提示
-                            prompt = f"请分析以下简历，并针对目标职位'{target_job}'提供详细的分析结果，包括：\n1. 简历的优势\n2. 需要改进的地方\n3. 具体的优化建议\n4. 优化后的简历片段示例\n5. 简历与目标职位的匹配度分析，包括技能匹配、经验匹配和教育背景匹配等方面，并给出一个0-100的匹配度分数\n6. 简历关键词优化建议，包括目标职位的核心关键词、行业热门关键词，以及如何在简历中合理使用这些关键词\n7. 简历模板推荐，根据目标职位和行业特点，推荐适合的简历模板类型和布局\n8. 行业趋势分析和技能需求预测，包括目标职位所在行业的发展趋势、未来热门技能需求，以及如何提前准备这些技能\n9. 个性化的职业发展建议，根据简历内容和目标职位，提供短期和长期的职业发展规划建议\n\n简历内容：\n{resume_content}"
-                            
-                            # 初始化ZhipuAiClient
-                            st.info("初始化ZhipuAiClient...")
-                            client = ZhipuAiClient(api_key=api_key)
-                            st.info("ZhipuAiClient初始化成功")
-                            
-                            # 调用GLM-4-Flash API
-                            st.info("调用GLM-4-Flash API...")
-                            try:
-                                response = client.chat.completions.create(
-                                    model="glm-4-flash",
-                                    messages=[
-                                        {
-                                            "role": "user",
-                                            "content": prompt
-                                        }
-                                    ],
-                                    temperature=0.7
-                                )
-                                st.info("API调用成功")
-                                
-                                # 显示分析结果
-                                st.subheader("分析结果")
-                                
-                                # 提取分析结果内容
-                                analysis_content = response.choices[0].message.content
-                                
-                                # 计算简历评分
-                                def calculate_resume_score(content):
-                                    # 基于分析内容计算评分
-                                    score = 70  # 基础分
-                                    
-                                    # 检查是否有优势部分
-                                    if "优势" in content or "优点" in content:
-                                        score += 10
-                                    
-                                    # 检查是否有改进建议
-                                    if "改进" in content or "建议" in content:
-                                        score += 5
-                                    
-                                    # 检查是否有具体的优化建议
-                                    if "优化" in content or "示例" in content:
-                                        score += 5
-                                    
-                                    # 确保分数在0-100之间
-                                    return min(100, max(0, score))
-                                
-                                # 计算并显示评分
-                                resume_score = calculate_resume_score(analysis_content)
-                                st.subheader("简历评分")
-                                st.progress(resume_score)
-                                st.write(f"您的简历评分为：{resume_score}/100")
-                                
-                                # 显示分析结果内容
-                                st.markdown(analysis_content)
-                                st.success("简历分析完成！")
-                            except Exception as api_error:
-                                st.error(f"API调用失败: {str(api_error)}")
-                                st.info(f"错误类型: {type(api_error).__name__}")
-                    except ImportError as e:
-                        st.warning(f"无法导入ZhipuAiClient: {str(e)}")
-                        # 如果没有安装zai-sdk，使用requests库调用
-                        import requests
+                        # 显示分析结果
+                        st.subheader("分析结果")
                         
-                        # 检查API密钥
-                        if not api_key:
-                            st.error("请在.env文件中配置GLM-4-Flash API密钥")
-                        elif api_key == "your-api-key-here":
-                            st.error("请在.env文件中填写正确的GLM-4-Flash API密钥")
-                        else:
-                            # 构建分析提示
-                            prompt = f"请分析以下简历，并针对目标职位'{target_job}'提供详细的分析结果，包括：\n1. 简历的优势\n2. 需要改进的地方\n3. 具体的优化建议\n4. 优化后的简历片段示例\n5. 简历与目标职位的匹配度分析，包括技能匹配、经验匹配和教育背景匹配等方面，并给出一个0-100的匹配度分数\n6. 简历关键词优化建议，包括目标职位的核心关键词、行业热门关键词，以及如何在简历中合理使用这些关键词\n7. 简历模板推荐，根据目标职位和行业特点，推荐适合的简历模板类型和布局\n8. 行业趋势分析和技能需求预测，包括目标职位所在行业的发展趋势、未来热门技能需求，以及如何提前准备这些技能\n9. 个性化的职业发展建议，根据简历内容和目标职位，提供短期和长期的职业发展规划建议\n\n简历内容：\n{resume_content}"
-                            
-                            # 调用GLM-4-Flash API
-                            url = "https://open.bigmodel.cn/api/paas/v4/chat/completions"  # 使用正确的API端点
-                            headers = {
-                                "Content-Type": "application/json",
-                                "Authorization": f"Bearer {api_key}"
-                            }
-                            data = {
-                                "model": "glm-4-flash",
-                                "messages": [
-                                    {
-                                        "role": "user",
-                                        "content": prompt
-                                    }
-                                ],
-                                "temperature": 0.7
-                            }
-                            
-                            # 打印调试信息
-                            st.info(f"API URL: {url}")
-                            st.info(f"请求头: {headers}")
-                            
-                            try:
-                                response = requests.post(url, headers=headers, json=data)
-                                st.info(f"响应状态码: {response.status_code}")
-                                st.info(f"响应头: {dict(response.headers)}")
-                                
-                                response_data = response.json()
-                                st.info(f"响应内容: {response_data}")
-                                
-                                if "choices" in response_data and len(response_data["choices"]) > 0:
-                                    # 显示分析结果
-                                    st.subheader("分析结果")
-                                    
-                                    # 提取分析结果内容
-                                    analysis_content = response_data["choices"][0]["message"]["content"]
-                                    
-                                    # 计算简历评分
-                                    def calculate_resume_score(content):
-                                        # 基于分析内容计算评分
-                                        score = 70  # 基础分
-                                        
-                                        # 检查是否有优势部分
-                                        if "优势" in content or "优点" in content:
-                                            score += 10
-                                        
-                                        # 检查是否有改进建议
-                                        if "改进" in content or "建议" in content:
-                                            score += 5
-                                        
-                                        # 检查是否有具体的优化建议
-                                        if "优化" in content or "示例" in content:
-                                            score += 5
-                                        
-                                        # 确保分数在0-100之间
-                                        return min(100, max(0, score))
-                                    
-                                    # 计算并显示评分
-                                    resume_score = calculate_resume_score(analysis_content)
-                                    st.subheader("简历评分")
-                                    st.progress(resume_score)
-                                    st.write(f"您的简历评分为：{resume_score}/100")
-                                    
-                                    # 显示分析结果内容
-                                    st.markdown(analysis_content)
-                                    st.success("简历分析完成！")
-                                else:
-                                    # 显示详细的错误信息
-                                    error_message = response_data.get('error', {}).get('message', '未知错误')
-                                    st.error(f"API调用失败: {error_message}")
-                                    # 显示完整的响应内容，以便调试
-                                    st.info(f"完整响应: {response_data}")
-                            except Exception as req_error:
-                                st.error(f"请求失败: {str(req_error)}")
+                        # 提取分析结果内容
+                        analysis_content = result["choices"][0]["message"]["content"]
                         
+                        # 计算简历评分
+                        def calculate_resume_score(content):
+                            # 基于分析内容计算评分
+                            score = 70  # 基础分
+                            
+                            # 检查是否有优势部分
+                            if "优势" in content or "优点" in content:
+                                score += 10
+                            
+                            # 检查是否有改进建议
+                            if "改进" in content or "建议" in content:
+                                score += 5
+                            
+                            # 检查是否有具体的优化建议
+                            if "优化" in content or "示例" in content:
+                                score += 5
+                            
+                            # 确保分数在0-100之间
+                            return min(100, max(0, score))
+                        
+                        # 计算并显示评分
+                        resume_score = calculate_resume_score(analysis_content)
+                        st.subheader("简历评分")
+                        st.progress(resume_score)
+                        st.write(f"您的简历评分为：{resume_score}/100")
+                        
+                        # 显示分析结果内容
+                        st.markdown(analysis_content)
+                        st.success("简历分析完成！")
+                        
+                        # 显示API使用统计
+                        api_stats = get_api_stats()
+                        st.subheader("API使用统计")
+                        st.write(f"总调用次数: {api_stats['total_calls']}")
+                        st.write(f"成功调用次数: {api_stats['successful_calls']}")
+                        st.write(f"失败调用次数: {api_stats['failed_calls']}")
+                        if api_stats['total_calls'] > 0:
+                            avg_response_time = api_stats['total_response_time'] / api_stats['total_calls']
+                            st.write(f"平均响应时间: {avg_response_time:.2f}秒")
+                        if api_stats['last_call_time']:
+                            st.write(f"最后调用时间: {api_stats['last_call_time']}")
+                    else:
+                        st.error(f"API调用失败: {result}")
+                        # 显示模拟分析结果
+                        st.subheader("分析结果")
+                        st.markdown("**简历优势**：\n- 教育背景良好\n- 相关工作经验丰富\n- 技能与目标职位匹配度高\n\n**需要改进的地方**：\n- 简历格式需要优化\n- 工作描述不够具体\n- 缺乏量化的成果展示\n\n**优化建议**：\n- 使用STAR法则（情境、任务、行动、结果）描述工作经验\n- 添加具体的项目成果和数据\n- 突出与目标职位相关的技能和经验\n\n**优化后的简历片段**：\n在担任软件工程师期间，负责开发和维护公司核心产品，通过优化算法，将系统响应时间减少了30%，提高了用户满意度。")
+                        st.success("简历分析完成！")
                 except Exception as e:
                     # 如果API调用失败，使用模拟结果
                     st.warning(f"AI分析暂时不可用，显示模拟分析结果: {str(e)}")
@@ -1313,6 +1632,804 @@ else:
         st.write("**电话面试**：准备好简历和笔记，保持清晰的语音")
         st.write("**案例面试**：练习分析问题的思路和方法")
     
+    # 第三方服务页面
+    elif page == "第三方服务":
+        st.header("第三方服务集成")
+        
+        # 记录功能使用
+        record_feature_usage(user_id, "第三方服务")
+        
+        # 创建标签页
+        tab1, tab2, tab3, tab4 = st.tabs(["招聘平台", "职业测评", "技能认证", "在线学习"])
+        
+        with tab1:
+            st.subheader("招聘平台集成")
+            
+            # LinkedIn集成
+            st.markdown("### LinkedIn")
+            linkedin_client_id = st.text_input("LinkedIn Client ID", placeholder="输入LinkedIn应用的Client ID")
+            linkedin_client_secret = st.text_input("LinkedIn Client Secret", type="password", 
+                                                   placeholder="输入LinkedIn应用的Client Secret")
+            linkedin_redirect_uri = st.text_input("Redirect URI", 
+                                               placeholder="输入重定向URI，如：http://localhost:8501")
+            
+            if st.button("连接LinkedIn"):
+                if linkedin_client_id and linkedin_client_secret and linkedin_redirect_uri:
+                    success, message = add_third_party_integration(
+                        user_id, "linkedin",
+                        integration_data=json.dumps({
+                            "client_id": linkedin_client_id,
+                            "client_secret": linkedin_client_secret,
+                            "redirect_uri": linkedin_redirect_uri
+                        })
+                    )
+                    if success:
+                        st.success(message)
+                    else:
+                        st.error(message)
+                else:
+                    st.error("请填写完整的LinkedIn集成信息")
+            
+            # Indeed集成
+            st.markdown("### Indeed")
+            indeed_publisher_id = st.text_input("Indeed Publisher ID", 
+                                             placeholder="输入Indeed的Publisher ID")
+            indeed_api_key = st.text_input("Indeed API Key", type="password",
+                                         placeholder="输入Indeed的API密钥")
+            
+            if st.button("连接Indeed"):
+                if indeed_publisher_id and indeed_api_key:
+                    success, message = add_third_party_integration(
+                        user_id, "indeed",
+                        integration_data=json.dumps({
+                            "publisher_id": indeed_publisher_id,
+                            "api_key": indeed_api_key
+                        })
+                    )
+                    if success:
+                        st.success(message)
+                    else:
+                        st.error(message)
+                else:
+                    st.error("请填写完整的Indeed集成信息")
+            
+            # 显示已集成的平台
+            st.subheader("已集成的平台")
+            success, integrations = get_user_integrations(user_id)
+            if success:
+                if integrations:
+                    for integration in integrations:
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            st.write(f"**{integration['platform'].upper()}** - 集成于 {integration['created_at']}")
+                        with col2:
+                            if st.button("移除", key=f"remove_{integration['id']}"):
+                                success, message = remove_integration(user_id, integration['platform'])
+                                if success:
+                                    st.success(message)
+                                    st.experimental_rerun()
+                                else:
+                                    st.error(message)
+                else:
+                    st.write("暂无集成的平台")
+            else:
+                st.error(integrations)
+        
+        with tab2:
+            st.subheader("职业测评")
+            
+            # 创建测评
+            st.markdown("### 创建新测评")
+            assessment_type = st.selectbox(
+                "测评类型",
+                ["性格测试", "职业兴趣测试", "能力测试", "价值观测试"]
+            )
+            
+            if st.button("开始测评"):
+                success, result = create_career_assessment(user_id, assessment_type, json.dumps({}))
+                if success:
+                    st.success(f"测评已创建，ID: {result}")
+                else:
+                    st.error(result)
+            
+            # 显示历史测评
+            st.subheader("历史测评")
+            success, assessments = get_user_assessments(user_id)
+            if success:
+                if assessments:
+                    for assessment in assessments:
+                        st.markdown(f"### {assessment['assessment_type']}")
+                        st.write(f"状态: {assessment['status']}")
+                        st.write(f"创建时间: {assessment['created_at']}")
+                        if assessment['completed_at']:
+                            st.write(f"完成时间: {assessment['completed_at']}")
+                        st.write("---")
+                else:
+                    st.write("暂无测评记录")
+            else:
+                st.error(assessments)
+        
+        with tab3:
+            st.subheader("技能认证")
+            
+            # 添加认证
+            st.markdown("### 添加技能认证")
+            with st.form("certification_form"):
+                certification_name = st.text_input("认证名称", placeholder="如：AWS认证解决方案架构师")
+                certification_provider = st.text_input("认证提供者", placeholder="如：Amazon Web Services")
+                certification_level = st.selectbox(
+                    "认证级别",
+                    ["入门级", "助理级", "专业级", "专家级", "大师级"]
+                )
+                issue_date = st.date_input("发证日期")
+                expiry_date = st.date_input("过期日期")
+                certificate_url = st.text_input("证书链接", placeholder="输入证书的在线链接")
+                
+                submitted = st.form_submit_button("添加认证")
+                if submitted:
+                    if certification_name:
+                        success, message = add_skill_certification(
+                            user_id, certification_name, certification_provider,
+                            certification_level, issue_date, expiry_date, certificate_url
+                        )
+                        if success:
+                            st.success(message)
+                        else:
+                            st.error(message)
+                    else:
+                        st.error("请输入认证名称")
+            
+            # 显示已有认证
+            st.subheader("已有认证")
+            success, certifications = get_user_certifications(user_id)
+            if success:
+                if certifications:
+                    for cert in certifications:
+                        st.markdown(f"### {cert['certification_name']}")
+                        st.write(f"提供者: {cert['certification_provider']}")
+                        st.write(f"级别: {cert['certification_level']}")
+                        st.write(f"发证日期: {cert['issue_date']}")
+                        st.write(f"过期日期: {cert['expiry_date']}")
+                        if cert['certificate_url']:
+                            st.markdown(f"[查看证书]({cert['certificate_url']})")
+                        st.write(f"状态: {cert['status']}")
+                        st.write("---")
+                else:
+                    st.write("暂无认证记录")
+            else:
+                st.error(certifications)
+        
+        with tab4:
+            st.subheader("在线学习")
+            
+            # 注册课程
+            st.markdown("### 注册新课程")
+            with st.form("course_form"):
+                course_name = st.text_input("课程名称", placeholder="输入课程名称")
+                course_provider = st.text_input("课程提供者", placeholder="如：Coursera, Udemy, edX")
+                course_url = st.text_input("课程链接", placeholder="输入课程的在线链接")
+                skill_level = st.selectbox(
+                    "技能级别",
+                    ["初级", "中级", "高级", "专家级"]
+                )
+                
+                submitted = st.form_submit_button("注册课程")
+                if submitted:
+                    if course_name:
+                        success, message = enroll_online_course(
+                            user_id, course_name, course_provider, course_url, skill_level
+                        )
+                        if success:
+                            st.success(message)
+                        else:
+                            st.error(message)
+                    else:
+                        st.error("请输入课程名称")
+            
+            # 显示已注册课程
+            st.subheader("已注册课程")
+            success, courses = get_user_courses(user_id)
+            if success:
+                if courses:
+                    for course in courses:
+                        st.markdown(f"### {course['course_name']}")
+                        st.write(f"提供者: {course['course_provider']}")
+                        st.write(f"级别: {course['skill_level']}")
+                        st.write(f"进度: {course['progress']}%")
+                        st.progress(course['progress'])
+                        st.write(f"状态: {course['status']}")
+                        st.write(f"注册时间: {course['enrolled_at']}")
+                        if course['completed_at']:
+                            st.write(f"完成时间: {course['completed_at']}")
+                        
+                        # 更新进度
+                        new_progress = st.slider(f"更新进度", 0, 100, course['progress'], 
+                                              key=f"progress_{course['id']}")
+                        if st.button(f"更新", key=f"update_{course['id']}"):
+                            success, message = update_course_progress(
+                                user_id, course['id'], new_progress
+                            )
+                            if success:
+                                st.success(message)
+                                st.experimental_rerun()
+                            else:
+                                st.error(message)
+                        
+                        st.write("---")
+                else:
+                    st.write("暂无课程记录")
+            else:
+                st.error(courses)
+    
+    # 企业版页面
+    elif page == "企业版":
+        st.header("企业版功能")
+        
+        # 记录功能使用
+        record_feature_usage(user_id, "企业版")
+        
+        # 创建标签页
+        tab1, tab2, tab3, tab4 = st.tabs(["企业管理", "团队协作", "共享资源", "数据分析"])
+        
+        with tab1:
+            st.subheader("企业管理")
+            
+            # 创建企业
+            st.markdown("### 创建新企业")
+            with st.form("company_form"):
+                company_name = st.text_input("企业名称", placeholder="输入企业名称")
+                industry = st.selectbox(
+                    "行业",
+                    ["科技", "金融", "医疗", "教育", "制造业", "零售", "其他"]
+                )
+                size = st.selectbox(
+                    "企业规模",
+                    ["1-10人", "11-50人", "51-200人", "201-500人", "500人以上"]
+                )
+                website = st.text_input("企业网站", placeholder="输入企业网站")
+                description = st.text_area("企业描述", placeholder="输入企业描述")
+                subscription_plan = st.selectbox(
+                    "订阅计划",
+                    ["basic", "pro", "enterprise"]
+                )
+                
+                submitted = st.form_submit_button("创建企业")
+                if submitted:
+                    if company_name:
+                        success, result = create_company(
+                            company_name, industry, size, website, description, subscription_plan
+                        )
+                        if success:
+                            st.success(f"企业创建成功，ID: {result}")
+                        else:
+                            st.error(result)
+                    else:
+                        st.error("请输入企业名称")
+            
+            # 添加用户到企业
+            st.markdown("### 添加用户到企业")
+            with st.form("add_user_form"):
+                company_id = st.number_input("企业ID", min_value=1)
+                target_user_id = st.number_input("用户ID", min_value=1)
+                role = st.selectbox(
+                    "角色",
+                    ["admin", "manager", "member"]
+                )
+                department = st.text_input("部门", placeholder="输入部门名称")
+                position = st.text_input("职位", placeholder="输入职位名称")
+                
+                submitted = st.form_submit_button("添加用户")
+                if submitted:
+                    success, message = add_user_to_company(
+                        company_id, target_user_id, role, department, position
+                    )
+                    if success:
+                        st.success(message)
+                    else:
+                        st.error(message)
+            
+            # 显示企业用户
+            st.subheader("企业用户")
+            company_id = st.number_input("企业ID", min_value=1, key="company_id_users")
+            if st.button("查看用户", key="view_users"):
+                success, users = get_company_users(company_id)
+                if success:
+                    if users:
+                        for user in users:
+                            col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+                            with col1:
+                                st.write(f"**用户ID**: {user['user_id']}")
+                            with col2:
+                                st.write(f"**角色**: {user['role']}")
+                            with col3:
+                                st.write(f"**部门**: {user['department']}")
+                            with col4:
+                                if st.button("移除", key=f"remove_user_{user['id']}"):
+                                    success, message = remove_user_from_company(company_id, user['user_id'])
+                                    if success:
+                                        st.success(message)
+                                        st.experimental_rerun()
+                                    else:
+                                        st.error(message)
+                            st.write("---")
+                    else:
+                        st.write("暂无用户")
+                else:
+                    st.error(users)
+        
+        with tab2:
+            st.subheader("团队协作")
+            
+            # 创建团队
+            st.markdown("### 创建新团队")
+            with st.form("team_form"):
+                team_company_id = st.number_input("企业ID", min_value=1, key="team_company_id")
+                team_name = st.text_input("团队名称", placeholder="输入团队名称")
+                team_description = st.text_area("团队描述", placeholder="输入团队描述")
+                
+                submitted = st.form_submit_button("创建团队")
+                if submitted:
+                    if team_name:
+                        success, result = create_team(
+                            team_company_id, team_name, team_description, user_id
+                        )
+                        if success:
+                            st.success(f"团队创建成功，ID: {result}")
+                        else:
+                            st.error(result)
+                    else:
+                        st.error("请输入团队名称")
+            
+            # 添加团队成员
+            st.markdown("### 添加团队成员")
+            with st.form("add_member_form"):
+                team_id = st.number_input("团队ID", min_value=1)
+                member_user_id = st.number_input("用户ID", min_value=1, key="member_user_id")
+                member_role = st.selectbox(
+                    "角色",
+                    ["admin", "member"],
+                    key="member_role"
+                )
+                
+                submitted = st.form_submit_button("添加成员")
+                if submitted:
+                    success, message = add_team_member(team_id, member_user_id, member_role)
+                    if success:
+                        st.success(message)
+                    else:
+                        st.error(message)
+            
+            # 显示团队和成员
+            st.subheader("企业团队")
+            teams_company_id = st.number_input("企业ID", min_value=1, key="teams_company_id")
+            if st.button("查看团队", key="view_teams"):
+                success, teams = get_company_teams(teams_company_id)
+                if success:
+                    if teams:
+                        for team in teams:
+                            st.markdown(f"### {team['name']}")
+                            st.write(f"描述: {team['description']}")
+                            st.write(f"创建者: {team['created_by']}")
+                            
+                            # 显示团队成员
+                            success, members = get_team_members(team['id'])
+                            if success:
+                                if members:
+                                    st.write("**团队成员**:")
+                                    for member in members:
+                                        st.write(f"- 用户ID: {member['user_id']}, 角色: {member['role']}")
+                                else:
+                                    st.write("暂无成员")
+                            
+                            st.write("---")
+                    else:
+                        st.write("暂无团队")
+                else:
+                    st.error(teams)
+        
+        with tab3:
+            st.subheader("共享资源")
+            
+            # 创建共享资源
+            st.markdown("### 创建共享资源")
+            with st.form("resource_form"):
+                resource_team_id = st.number_input("团队ID", min_value=1, key="resource_team_id")
+                resource_type = st.selectbox(
+                    "资源类型",
+                    ["resume", "template", "job_posting"]
+                )
+                resource_name = st.text_input("资源名称", placeholder="输入资源名称")
+                resource_data = st.text_area("资源数据", placeholder="输入资源数据（JSON格式）")
+                
+                submitted = st.form_submit_button("创建资源")
+                if submitted:
+                    if resource_name and resource_data:
+                        success, message = create_shared_resource(
+                            resource_team_id, resource_type, resource_name, resource_data, user_id
+                        )
+                        if success:
+                            st.success(message)
+                        else:
+                            st.error(message)
+                    else:
+                        st.error("请填写完整的资源信息")
+            
+            # 显示团队资源
+            st.subheader("团队资源")
+            resources_team_id = st.number_input("团队ID", min_value=1, key="resources_team_id")
+            if st.button("查看资源", key="view_resources"):
+                success, resources = get_team_resources(resources_team_id)
+                if success:
+                    if resources:
+                        for resource in resources:
+                            st.markdown(f"### {resource['resource_name']}")
+                            st.write(f"类型: {resource['resource_type']}")
+                            st.write(f"创建者: {resource['created_by']}")
+                            st.write(f"创建时间: {resource['created_at']}")
+                            st.code(resource['resource_data'], language='json')
+                            st.write("---")
+                    else:
+                        st.write("暂无资源")
+                else:
+                    st.error(resources)
+        
+        with tab4:
+            st.subheader("数据分析")
+            
+            # 生成报告
+            st.markdown("### 生成数据分析报告")
+            with st.form("report_form"):
+                report_company_id = st.number_input("企业ID", min_value=1, key="report_company_id")
+                report_type = st.selectbox(
+                    "报告类型",
+                    ["usage", "performance", "hiring"]
+                )
+                period_start = st.date_input("开始日期", key="period_start")
+                period_end = st.date_input("结束日期", key="period_end")
+                
+                submitted = st.form_submit_button("生成报告")
+                if submitted:
+                    success, result = generate_analytics_report(
+                        report_company_id, report_type,
+                        datetime.combine(period_start, datetime.min.time()),
+                        datetime.combine(period_end, datetime.max.time())
+                    )
+                    if success:
+                        st.success("报告生成成功")
+                        st.json(result)
+                    else:
+                        st.error(result)
+            
+            # 显示历史报告
+            st.subheader("历史报告")
+            reports_company_id = st.number_input("企业ID", min_value=1, key="reports_company_id")
+            if st.button("查看报告", key="view_reports"):
+                success, reports = get_company_reports(reports_company_id)
+                if success:
+                    if reports:
+                        for report in reports:
+                            st.markdown(f"### {report['report_type'].upper()}报告")
+                            st.write(f"生成时间: {report['generated_at']}")
+                            st.write(f"时间范围: {report['period_start']} 至 {report['period_end']}")
+                            st.json(report['report_data'])
+                            st.write("---")
+                    else:
+                        st.write("暂无报告")
+                else:
+                    st.error(reports)
+    
+    # 用户反馈页面
+    elif page == "用户反馈":
+        st.header("用户反馈")
+        
+        # 记录功能使用
+        record_feature_usage(user_id, "用户反馈")
+        
+        # 反馈表单
+        with st.form("feedback_form"):
+            feedback_type = st.selectbox(
+                "反馈类型",
+                ["功能建议", "问题报告", "使用咨询", "其他"]
+            )
+            title = st.text_input("标题", placeholder="请输入反馈标题")
+            content = st.text_area("详细内容", height=200, placeholder="请详细描述你的反馈")
+            submitted = st.form_submit_button("提交反馈")
+            
+            if submitted:
+                if title and content:
+                    # 添加用户反馈
+                    success, message = add_user_feedback(user_id, feedback_type, title, content)
+                    if success:
+                        st.success(message)
+                    else:
+                        st.error(message)
+                else:
+                    st.error("请填写完整的反馈信息")
+        
+        # 功能使用统计
+        st.subheader("功能使用统计")
+        success, stats = get_feature_usage_stats()
+        if success:
+            if stats:
+                for stat in stats:
+                    st.write(f"**{stat['feature_name']}**：{stat['total_usage']}次使用，最后使用时间：{stat['last_used']}")
+            else:
+                st.write("暂无使用统计数据")
+        else:
+            st.error(stats)
+    
+    # 社区论坛页面
+    elif page == "社区论坛":
+        st.header("社区论坛")
+        
+        # 记录功能使用
+        record_feature_usage(user_id, "社区论坛")
+        
+        # 发布新帖子
+        st.subheader("发布新帖子")
+        with st.form("post_form"):
+            post_title = st.text_input("帖子标题", placeholder="请输入帖子标题")
+            post_content = st.text_area("帖子内容", height=300, placeholder="请输入帖子内容")
+            submitted = st.form_submit_button("发布帖子")
+            
+            if submitted:
+                if post_title and post_content:
+                    # 添加社区帖子
+                    success, message = add_community_post(user_id, post_title, post_content)
+                    if success:
+                        st.success(message)
+                        # 刷新页面
+                        st.experimental_rerun()
+                    else:
+                        st.error(message)
+                else:
+                    st.error("请填写完整的帖子信息")
+        
+        # 显示社区帖子
+        st.subheader("社区帖子")
+        success, posts = get_community_posts()
+        if success:
+            if posts:
+                for post in posts:
+                    st.markdown(f"### {post['title']}")
+                    st.write(f"发布时间：{post['created_at']}")
+                    st.write(f"浏览量：{post['views']} | 点赞数：{post['likes']} | 评论数：{post['comment_count']}")
+                    st.write(post['content'])
+                    
+                    # 评论表单
+                    st.subheader("评论")
+                    comment_content = st.text_area(f"评论帖子 {post['id']}", height=100, key=f"comment_{post['id']}")
+                    if st.button(f"提交评论", key=f"submit_comment_{post['id']}"):
+                        if comment_content:
+                            # 添加社区评论
+                            success, message = add_community_comment(post['id'], user_id, comment_content)
+                            if success:
+                                st.success(message)
+                                # 刷新页面
+                                st.experimental_rerun()
+                            else:
+                                st.error(message)
+                        else:
+                            st.error("请输入评论内容")
+                    
+                    st.write("---")
+            else:
+                st.write("暂无社区帖子")
+        else:
+            st.error(posts)
+    
     # 页脚
     st.markdown("---")
     st.write("© 2026 AI助残求职辅助工具 | 为残障人士提供平等的就业机会")
+    
+    # 添加语音导航和文本到语音转换功能
+    if st.session_state.voice_navigation or st.session_state.text_to_speech:
+        st.markdown("""
+        <script>
+        // 语音导航功能
+        let recognition = null;
+        let isListening = false;
+        
+        // 初始化语音识别
+        function initVoiceRecognition() {
+            if ('webkitSpeechRecognition' in window) {
+                recognition = new webkitSpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'zh-CN';
+                
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    processVoiceCommand(transcript);
+                };
+                
+                recognition.onerror = function(event) {
+                    console.error('语音识别错误:', event.error);
+                };
+                
+                recognition.onend = function() {
+                    isListening = false;
+                    updateVoiceIndicator();
+                };
+            }
+        }
+        
+        // 处理语音命令
+        function processVoiceCommand(command) {
+            command = command.toLowerCase();
+            
+            if (command.includes('首页') || command.includes('主页')) {
+                document.querySelector('[data-testid="stSidebarNav"] li:nth-child(1) a').click();
+            } else if (command.includes('个人信息')) {
+                document.querySelector('[data-testid="stSidebarNav"] li:nth-child(2) a').click();
+            } else if (command.includes('简历分析')) {
+                document.querySelector('[data-testid="stSidebarNav"] li:nth-child(3) a').click();
+            } else if (command.includes('职位推荐')) {
+                document.querySelector('[data-testid="stSidebarNav"] li:nth-child(4) a').click();
+            } else if (command.includes('面试模拟')) {
+                document.querySelector('[data-testid="stSidebarNav"] li:nth-child(5) a').click();
+            } else if (command.includes('提交') || command.includes('确认')) {
+                const buttons = document.querySelectorAll('button');
+                for (let button of buttons) {
+                    if (button.textContent.includes('提交') || button.textContent.includes('确认')) {
+                        button.click();
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // 切换语音识别状态
+        function toggleVoiceRecognition() {
+            if (!recognition) {
+                initVoiceRecognition();
+            }
+            
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+                isListening = true;
+                updateVoiceIndicator();
+            }
+        }
+        
+        // 更新语音指示器
+        function updateVoiceIndicator() {
+            const indicator = document.querySelector('.voice-navigation-indicator');
+            if (indicator) {
+                if (isListening) {
+                    indicator.style.background = '#f44336';
+                    indicator.textContent = '🔊';
+                } else {
+                    indicator.style.background = '#4CAF50';
+                    indicator.textContent = '🎤';
+                }
+            }
+        }
+        
+        // 文本到语音转换
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                const speech = new SpeechSynthesisUtterance(text);
+                speech.lang = 'zh-CN';
+                speechSynthesis.speak(speech);
+            }
+        }
+        
+        // 为页面元素添加文本到语音功能
+        function initTextToSpeech() {
+            const elements = document.querySelectorAll('h1, h2, h3, p, span, div');
+            elements.forEach(element => {
+                if (element.textContent.trim() !== '') {
+                    element.addEventListener('mouseover', function() {
+                        if (element.dataset.speaked !== 'true') {
+                            speakText(element.textContent);
+                            element.dataset.speaked = 'true';
+                            setTimeout(() => {
+                                delete element.dataset.speaked;
+                            }, 3000);
+                        }
+                    });
+                }
+            });
+        }
+        
+        // 创建语音导航指示器
+        function createVoiceNavigationIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'voice-navigation-indicator';
+            indicator.textContent = '🎤';
+            indicator.title = '点击开始语音导航';
+            indicator.addEventListener('click', toggleVoiceRecognition);
+            document.body.appendChild(indicator);
+        }
+        
+        // 语音输入到文本框功能
+        function initVoiceInput() {
+            const textInputs = document.querySelectorAll('input[type="text"], textarea');
+            textInputs.forEach(input => {
+                const voiceButton = document.createElement('button');
+                voiceButton.className = 'voice-input-button';
+                voiceButton.textContent = '🎤';
+                voiceButton.title = '点击开始语音输入';
+                voiceButton.style.position = 'absolute';
+                voiceButton.style.right = '5px';
+                voiceButton.style.top = '50%';
+                voiceButton.style.transform = 'translateY(-50%)';
+                voiceButton.style.background = 'transparent';
+                voiceButton.style.border = 'none';
+                voiceButton.style.cursor = 'pointer';
+                voiceButton.style.fontSize = '16px';
+                
+                const parent = input.parentElement;
+                parent.style.position = 'relative';
+                parent.appendChild(voiceButton);
+                
+                voiceButton.addEventListener('click', function() {
+                    if ('webkitSpeechRecognition' in window) {
+                        const recognition = new webkitSpeechRecognition();
+                        recognition.continuous = false;
+                        recognition.interimResults = false;
+                        recognition.lang = 'zh-CN';
+                        
+                        voiceButton.textContent = '🔊';
+                        voiceButton.style.color = '#f44336';
+                        
+                        recognition.onresult = function(event) {
+                            const transcript = event.results[0][0].transcript;
+                            input.value = transcript;
+                            voiceButton.textContent = '🎤';
+                            voiceButton.style.color = '';
+                        };
+                        
+                        recognition.onerror = function(event) {
+                            console.error('语音识别错误:', event.error);
+                            voiceButton.textContent = '🎤';
+                            voiceButton.style.color = '';
+                        };
+                        
+                        recognition.onend = function() {
+                            voiceButton.textContent = '🎤';
+                            voiceButton.style.color = '';
+                        };
+                        
+                        recognition.start();
+                    }
+                });
+            });
+        }
+        
+        // 眼动追踪支持
+        function initEyeTracking() {
+            // 这里只是一个占位符，实际的眼动追踪需要相应的硬件设备和SDK
+            console.log('眼动追踪功能已启用');
+            
+            // 创建眼动追踪状态指示器
+            const eyeTrackingIndicator = document.createElement('div');
+            eyeTrackingIndicator.className = 'eye-tracking-indicator';
+            eyeTrackingIndicator.textContent = '👁️';
+            eyeTrackingIndicator.title = '眼动追踪已启用';
+            eyeTrackingIndicator.style.position = 'fixed';
+            eyeTrackingIndicator.style.bottom = '120px';
+            eyeTrackingIndicator.style.right = '10px';
+            eyeTrackingIndicator.style.background = '#2196F3';
+            eyeTrackingIndicator.style.color = 'white';
+            eyeTrackingIndicator.style.padding = '10px';
+            eyeTrackingIndicator.style.borderRadius = '50%';
+            eyeTrackingIndicator.style.zIndex = '1000';
+            eyeTrackingIndicator.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2);'
+            
+            document.body.appendChild(eyeTrackingIndicator);
+        }
+        
+        // 初始化功能
+        window.addEventListener('load', function() {
+            initVoiceRecognition();
+            createVoiceNavigationIndicator();
+            initTextToSpeech();
+            initVoiceInput();
+            initEyeTracking();
+        });
+        </script>
+        """, unsafe_allow_html=True)

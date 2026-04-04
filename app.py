@@ -2800,11 +2800,49 @@ else:
             }
         });
         
+        // 清理之前添加的元素
+        function cleanupElements() {
+            try {
+                // 移除语音导航指示器
+                const voiceIndicator = document.querySelector('.voice-navigation-indicator');
+                if (voiceIndicator && voiceIndicator.parentNode) {
+                    voiceIndicator.parentNode.removeChild(voiceIndicator);
+                }
+                
+                // 移除眼动追踪指示器
+                const eyeTrackingIndicator = document.querySelector('.eye-tracking-indicator');
+                if (eyeTrackingIndicator && eyeTrackingIndicator.parentNode) {
+                    eyeTrackingIndicator.parentNode.removeChild(eyeTrackingIndicator);
+                }
+                
+                // 移除语音输入按钮
+                const voiceButtons = document.querySelectorAll('.voice-input-button');
+                voiceButtons.forEach(button => {
+                    if (button.parentNode) {
+                        button.parentNode.removeChild(button);
+                    }
+                });
+                
+                // 重置元素的ttsInitialized标记
+                const elements = document.querySelectorAll('h1, h2, h3, p, span, div');
+                elements.forEach(element => {
+                    delete element.dataset.ttsInitialized;
+                    delete element.dataset.speaked;
+                });
+            } catch (e) {
+                console.error('清理元素失败:', e);
+            }
+        }
+        
         // 当页面重新渲染时，确保元素被正确处理
         window.addEventListener('streamlit:rerun', function() {
+            // 先清理之前的元素
+            cleanupElements();
+            
             // 重新初始化所有功能
             setTimeout(function() {
                 try {
+                    initVoiceRecognition();
                     createVoiceNavigationIndicator();
                     initTextToSpeech();
                     initVoiceInput();

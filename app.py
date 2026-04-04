@@ -2670,7 +2670,8 @@ else:
         function initTextToSpeech() {
             const elements = document.querySelectorAll('h1, h2, h3, p, span, div');
             elements.forEach(element => {
-                if (element.textContent.trim() !== '') {
+                if (element.textContent.trim() !== '' && !element.dataset.ttsInitialized) {
+                    element.dataset.ttsInitialized = 'true';
                     element.addEventListener('mouseover', function() {
                         if (element.dataset.speaked !== 'true') {
                             speakText(element.textContent);
@@ -2703,65 +2704,69 @@ else:
             const textInputs = document.querySelectorAll('input[type="text"], textarea');
             textInputs.forEach(input => {
                 // 先检查语音按钮是否已存在
-                if (!input.parentElement.querySelector('.voice-input-button')) {
-                    const voiceButton = document.createElement('button');
-                    voiceButton.className = 'voice-input-button';
-                    voiceButton.textContent = '🎤';
-                    voiceButton.title = '点击开始语音输入';
-                    voiceButton.style.position = 'absolute';
-                    voiceButton.style.right = '5px';
-                    voiceButton.style.top = '50%';
-                    voiceButton.style.transform = 'translateY(-50%)';
-                    voiceButton.style.background = 'transparent';
-                    voiceButton.style.border = 'none';
-                    voiceButton.style.cursor = 'pointer';
-                    voiceButton.style.fontSize = '16px';
-                    
-                    const parent = input.parentElement;
-                    parent.style.position = 'relative';
-                    parent.appendChild(voiceButton);
-                    
-                    voiceButton.addEventListener('click', function() {
-                        if ('webkitSpeechRecognition' in window) {
-                            const recognition = new webkitSpeechRecognition();
-                            recognition.continuous = false;
-                            recognition.interimResults = false;
-                            recognition.lang = 'zh-CN';
+                if (input.parentElement && !input.parentElement.querySelector('.voice-input-button')) {
+                    try {
+                        const voiceButton = document.createElement('button');
+                        voiceButton.className = 'voice-input-button';
+                        voiceButton.textContent = '🎤';
+                        voiceButton.title = '点击开始语音输入';
+                        voiceButton.style.position = 'absolute';
+                        voiceButton.style.right = '5px';
+                        voiceButton.style.top = '50%';
+                        voiceButton.style.transform = 'translateY(-50%)';
+                        voiceButton.style.background = 'transparent';
+                        voiceButton.style.border = 'none';
+                        voiceButton.style.cursor = 'pointer';
+                        voiceButton.style.fontSize = '16px';
+                        
+                        const parent = input.parentElement;
+                        if (parent) {
+                            parent.style.position = 'relative';
+                            parent.appendChild(voiceButton);
                             
-                            voiceButton.textContent = '🔊';
-                            voiceButton.style.color = '#f44336';
-                            
-                            recognition.onresult = function(event) {
-                                const transcript = event.results[0][0].transcript;
-                                input.value = transcript;
-                                voiceButton.textContent = '🎤';
-                                voiceButton.style.color = '';
-                            };
-                            
-                            recognition.onerror = function(event) {
-                                console.error('语音识别错误:', event.error);
-                                voiceButton.textContent = '🎤';
-                                voiceButton.style.color = '';
-                            };
-                            
-                            recognition.onend = function() {
-                                voiceButton.textContent = '🎤';
-                                voiceButton.style.color = '';
-                            };
-                            
-                            recognition.start();
+                            voiceButton.addEventListener('click', function() {
+                                if ('webkitSpeechRecognition' in window) {
+                                    const recognition = new webkitSpeechRecognition();
+                                    recognition.continuous = false;
+                                    recognition.interimResults = false;
+                                    recognition.lang = 'zh-CN';
+                                    
+                                    voiceButton.textContent = '🔊';
+                                    voiceButton.style.color = '#f44336';
+                                    
+                                    recognition.onresult = function(event) {
+                                        const transcript = event.results[0][0].transcript;
+                                        input.value = transcript;
+                                        voiceButton.textContent = '🎤';
+                                        voiceButton.style.color = '';
+                                    };
+                                    
+                                    recognition.onerror = function(event) {
+                                        console.error('语音识别错误:', event.error);
+                                        voiceButton.textContent = '🎤';
+                                        voiceButton.style.color = '';
+                                    };
+                                    
+                                    recognition.onend = function() {
+                                        voiceButton.textContent = '🎤';
+                                        voiceButton.style.color = '';
+                                    };
+                                    
+                                    recognition.start();
+                                }
+                            });
                         }
-                    });
+                    } catch (e) {
+                        console.error('初始化语音输入失败:', e);
+                    }
                 }
             });
         }
         
         // 眼动追踪支持
         function initEyeTracking() {
-            // 这里只是一个占位符，实际的眼动追踪需要相应的硬件设备和SDK
             console.log('眼动追踪功能已启用');
             
-            // 创建眼动追踪状态指示器
             let eyeTrackingIndicator = document.querySelector('.eye-tracking-indicator');
             if (!eyeTrackingIndicator) {
                 eyeTrackingIndicator = document.createElement('div');
@@ -2784,23 +2789,31 @@ else:
         
         // 初始化功能
         window.addEventListener('load', function() {
-            initVoiceRecognition();
-            createVoiceNavigationIndicator();
-            initTextToSpeech();
-            initVoiceInput();
-            initEyeTracking();
+            try {
+                initVoiceRecognition();
+                createVoiceNavigationIndicator();
+                initTextToSpeech();
+                initVoiceInput();
+                initEyeTracking();
+            } catch (e) {
+                console.error('初始化功能失败:', e);
+            }
         });
         
         // 当页面重新渲染时，确保元素被正确处理
         window.addEventListener('streamlit:rerun', function() {
             // 重新初始化所有功能
             setTimeout(function() {
-                initVoiceRecognition();
-                createVoiceNavigationIndicator();
-                initTextToSpeech();
-                initVoiceInput();
-                initEyeTracking();
+                try {
+                    createVoiceNavigationIndicator();
+                    initTextToSpeech();
+                    initVoiceInput();
+                    initEyeTracking();
+                } catch (e) {
+                    console.error('重新初始化功能失败:', e);
+                }
             }, 100);
         });
+
         </script>
         """, unsafe_allow_html=True)

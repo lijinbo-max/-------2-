@@ -892,6 +892,7 @@ else:
             session.close()
         
         # 显示现有教育背景
+        edu_needs_rerun = False
         for edu in educations:
             with st.expander(f"{edu.school} - {edu.education_level}"):
                 st.write(f"专业: {edu.major}")
@@ -903,9 +904,12 @@ else:
                         session.delete(edu_to_delete)
                         session.commit()
                         st.success("教育背景删除成功！")
-                        st.rerun()
+                        edu_needs_rerun = True
                     finally:
                         session.close()
+        
+        if edu_needs_rerun:
+            st.rerun()
         
         # 添加新教育背景
         with st.form("education_form"):
@@ -944,6 +948,7 @@ else:
             session.close()
         
         # 显示现有工作经验
+        work_needs_rerun = False
         for work in work_experiences:
             with st.expander(f"{work.company} - {work.position}"):
                 st.write(f"开始日期: {work.start_date}")
@@ -956,9 +961,12 @@ else:
                         session.delete(work_to_delete)
                         session.commit()
                         st.success("工作经验删除成功！")
-                        st.rerun()
+                        work_needs_rerun = True
                     finally:
                         session.close()
+        
+        if work_needs_rerun:
+            st.rerun()
         
         # 添加新工作经验
         with st.form("work_experience_form"):
@@ -1730,9 +1738,13 @@ else:
                                 success, message = remove_integration(user_id, integration['platform'])
                                 if success:
                                     st.success(message)
-                                    st.rerun()
+                                    st.session_state.needs_rerun = True
                                 else:
                                     st.error(message)
+                    
+                    if st.session_state.get('needs_rerun', False):
+                        del st.session_state.needs_rerun
+                        st.rerun()
                 else:
                     st.write("暂无集成的平台")
             else:
@@ -1854,6 +1866,7 @@ else:
             success, courses = get_user_courses(user_id)
             if success:
                 if courses:
+                    course_needs_rerun = False
                     for course in courses:
                         st.markdown(f"### {course['course_name']}")
                         st.write(f"提供者: {course['course_provider']}")
@@ -1874,11 +1887,14 @@ else:
                             )
                             if success:
                                 st.success(message)
-                                st.rerun()
+                                course_needs_rerun = True
                             else:
                                 st.error(message)
                         
                         st.write("---")
+                    
+                    if course_needs_rerun:
+                        st.rerun()
                 else:
                     st.write("暂无课程记录")
             else:
@@ -1970,6 +1986,7 @@ else:
                 success, users = get_company_users(company_id)
                 if success:
                     if users:
+                        user_needs_rerun = False
                         for user in users:
                             col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
                             with col1:
@@ -1983,10 +2000,13 @@ else:
                                     success, message = remove_user_from_company(company_id, user['user_id'])
                                     if success:
                                         st.success(message)
-                                        st.rerun()
+                                        user_needs_rerun = True
                                     else:
                                         st.error(message)
                             st.write("---")
+                        
+                        if user_needs_rerun:
+                            st.rerun()
                     else:
                         st.write("暂无用户")
                 else:
@@ -2264,14 +2284,17 @@ else:
                             success, message = add_community_comment(post['id'], user_id, comment_content)
                             if success:
                                 st.success(message)
-                                # 刷新页面
-                                st.rerun()
+                                st.session_state.needs_rerun_posts = True
                             else:
                                 st.error(message)
                         else:
                             st.error("请输入评论内容")
                     
                     st.write("---")
+            
+            if st.session_state.get('needs_rerun_posts', False):
+                del st.session_state.needs_rerun_posts
+                st.rerun()
             else:
                 st.write("暂无社区帖子")
         else:

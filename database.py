@@ -890,10 +890,25 @@ def get_user_courses(user_id):
         session = get_session()
         courses = session.query(OnlineCourse).filter_by(user_id=user_id).all()
         session.close()
-        return courses
+        
+        courses_list = []
+        for course in courses:
+            courses_list.append({
+                'id': course.id,
+                'course_name': course.course_name,
+                'course_provider': course.course_provider,
+                'course_url': course.course_url,
+                'skill_level': course.skill_level,
+                'progress': course.progress,
+                'status': course.status,
+                'enrolled_at': course.enrolled_at.strftime('%Y-%m-%d %H:%M:%S') if course.enrolled_at else '未知',
+                'completed_at': course.completed_at.strftime('%Y-%m-%d %H:%M:%S') if course.completed_at else None
+            })
+        
+        return True, courses_list
     except Exception as e:
         print(f"获取用户课程失败: {str(e)}")
-        return []
+        return False, str(e)
 
 # 创建企业
 def create_company(name, industry=None, size=None, website=None, description=None):

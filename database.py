@@ -778,10 +778,21 @@ def get_user_assessments(user_id):
         session = get_session()
         assessments = session.query(CareerAssessment).filter_by(user_id=user_id).order_by(CareerAssessment.created_at.desc()).all()
         session.close()
-        return assessments
+        
+        assessments_list = []
+        for assessment in assessments:
+            assessments_list.append({
+                'id': assessment.id,
+                'assessment_type': assessment.assessment_type,
+                'status': assessment.status,
+                'created_at': assessment.created_at.strftime('%Y-%m-%d %H:%M:%S') if assessment.created_at else '未知',
+                'completed_at': assessment.completed_at.strftime('%Y-%m-%d %H:%M:%S') if assessment.completed_at else None
+            })
+        
+        return True, assessments_list
     except Exception as e:
         print(f"获取用户测评失败: {str(e)}")
-        return []
+        return False, str(e)
 
 # 添加技能认证
 def add_skill_certification(user_id, certification_name, certification_provider=None, certification_level=None, issue_date=None, expiry_date=None, certificate_url=None):
@@ -812,10 +823,25 @@ def get_user_certifications(user_id):
         session = get_session()
         certifications = session.query(SkillCertification).filter_by(user_id=user_id).all()
         session.close()
-        return certifications
+        
+        certifications_list = []
+        for cert in certifications:
+            certifications_list.append({
+                'id': cert.id,
+                'certification_name': cert.certification_name,
+                'certification_provider': cert.certification_provider,
+                'certification_level': cert.certification_level,
+                'issue_date': cert.issue_date.strftime('%Y-%m-%d') if cert.issue_date else None,
+                'expiry_date': cert.expiry_date.strftime('%Y-%m-%d') if cert.expiry_date else None,
+                'certificate_url': cert.certificate_url,
+                'status': cert.status,
+                'created_at': cert.created_at.strftime('%Y-%m-%d %H:%M:%S') if cert.created_at else '未知'
+            })
+        
+        return True, certifications_list
     except Exception as e:
         print(f"获取用户认证失败: {str(e)}")
-        return []
+        return False, str(e)
 
 # 注册在线课程
 def enroll_online_course(user_id, course_name, course_provider=None, course_url=None, skill_level=None):
@@ -916,10 +942,22 @@ def get_company_users(company_id):
         session = get_session()
         company_users = session.query(CompanyUser).filter_by(company_id=company_id, is_active=True).all()
         session.close()
-        return company_users
+        
+        users_list = []
+        for company_user in company_users:
+            users_list.append({
+                'id': company_user.id,
+                'user_id': company_user.user_id,
+                'role': company_user.role,
+                'department': company_user.department,
+                'position': company_user.position,
+                'joined_at': company_user.joined_at.strftime('%Y-%m-%d %H:%M:%S') if company_user.joined_at else '未知'
+            })
+        
+        return True, users_list
     except Exception as e:
         print(f"获取企业用户失败: {str(e)}")
-        return []
+        return False, str(e)
 
 # 更新用户角色
 def update_user_role(company_user_id, role):
@@ -977,10 +1015,21 @@ def get_company_teams(company_id):
         session = get_session()
         teams = session.query(Team).filter_by(company_id=company_id).all()
         session.close()
-        return teams
+        
+        teams_list = []
+        for team in teams:
+            teams_list.append({
+                'id': team.id,
+                'name': team.name,
+                'description': team.description,
+                'created_at': team.created_at.strftime('%Y-%m-%d %H:%M:%S') if team.created_at else '未知',
+                'created_by': team.created_by
+            })
+        
+        return True, teams_list
     except Exception as e:
         print(f"获取企业团队失败: {str(e)}")
-        return []
+        return False, str(e)
 
 # 添加团队成员
 def add_team_member(team_id, user_id, role='member'):
@@ -1007,10 +1056,20 @@ def get_team_members(team_id):
         session = get_session()
         members = session.query(TeamMember).filter_by(team_id=team_id).all()
         session.close()
-        return members
+        
+        members_list = []
+        for member in members:
+            members_list.append({
+                'id': member.id,
+                'user_id': member.user_id,
+                'role': member.role,
+                'joined_at': member.joined_at.strftime('%Y-%m-%d %H:%M:%S') if member.joined_at else '未知'
+            })
+        
+        return True, members_list
     except Exception as e:
         print(f"获取团队成员失败: {str(e)}")
-        return []
+        return False, str(e)
 
 # 创建共享资源
 def create_shared_resource(team_id, resource_type, resource_name, resource_data, created_by=None):
@@ -1039,10 +1098,22 @@ def get_team_resources(team_id):
         session = get_session()
         resources = session.query(SharedResource).filter_by(team_id=team_id).all()
         session.close()
-        return resources
+        
+        resources_list = []
+        for resource in resources:
+            resources_list.append({
+                'id': resource.id,
+                'resource_type': resource.resource_type,
+                'resource_name': resource.resource_name,
+                'resource_data': resource.resource_data,
+                'created_at': resource.created_at.strftime('%Y-%m-%d %H:%M:%S') if resource.created_at else '未知',
+                'created_by': resource.created_by
+            })
+        
+        return True, resources_list
     except Exception as e:
         print(f"获取团队资源失败: {str(e)}")
-        return []
+        return False, str(e)
 
 # 生成分析报告
 def generate_analytics_report(company_id, report_type, report_data, period_start=None, period_end=None):
@@ -1071,10 +1142,22 @@ def get_company_reports(company_id):
         session = get_session()
         reports = session.query(AnalyticsReport).filter_by(company_id=company_id).order_by(AnalyticsReport.generated_at.desc()).all()
         session.close()
-        return reports
+        
+        reports_list = []
+        for report in reports:
+            reports_list.append({
+                'id': report.id,
+                'report_type': report.report_type,
+                'report_data': report.report_data,
+                'generated_at': report.generated_at.strftime('%Y-%m-%d %H:%M:%S') if report.generated_at else '未知',
+                'period_start': report.period_start.strftime('%Y-%m-%d') if report.period_start else None,
+                'period_end': report.period_end.strftime('%Y-%m-%d') if report.period_end else None
+            })
+        
+        return True, reports_list
     except Exception as e:
         print(f"获取企业报告失败: {str(e)}")
-        return []
+        return False, str(e)
 
 # 记录用户活动
 def log_activity(user_id, activity_type, activity_data=None, company_id=None, ip_address=None, user_agent=None):

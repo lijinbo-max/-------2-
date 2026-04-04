@@ -584,10 +584,19 @@ def get_feature_usage_stats(user_id):
         session = get_session()
         usages = session.query(FeatureUsage).filter_by(user_id=user_id).all()
         session.close()
-        return usages
+        
+        stats = []
+        for usage in usages:
+            stats.append({
+                'feature_name': usage.feature_name,
+                'total_usage': usage.usage_count,
+                'last_used': usage.last_used.strftime('%Y-%m-%d %H:%M:%S') if usage.last_used else '从未使用'
+            })
+        
+        return True, stats
     except Exception as e:
         print(f"获取功能使用统计失败: {str(e)}")
-        return []
+        return False, str(e)
 
 # 添加用户反馈
 def add_user_feedback(user_id, feedback_type, title, content):

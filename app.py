@@ -2195,7 +2195,7 @@ else:
         
         # 功能使用统计
         st.subheader("功能使用统计")
-        success, stats = get_feature_usage_stats()
+        success, stats = get_feature_usage_stats(user_id)
         if success:
             if stats:
                 for stat in stats:

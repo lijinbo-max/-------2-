@@ -643,10 +643,23 @@ def get_community_posts(limit=10):
         session = get_session()
         posts = session.query(CommunityPost).order_by(CommunityPost.created_at.desc()).limit(limit).all()
         session.close()
-        return posts
+        
+        posts_list = []
+        for post in posts:
+            posts_list.append({
+                'id': post.id,
+                'title': post.title,
+                'content': post.content,
+                'created_at': post.created_at.strftime('%Y-%m-%d %H:%M:%S') if post.created_at else '未知',
+                'views': post.views,
+                'likes': post.likes,
+                'comment_count': len(post.comments) if post.comments else 0
+            })
+        
+        return True, posts_list
     except Exception as e:
         print(f"获取社区帖子失败: {str(e)}")
-        return []
+        return False, str(e)
 
 # 添加社区评论
 def add_community_comment(post_id, user_id, content):
@@ -694,10 +707,19 @@ def get_user_integrations(user_id):
         session = get_session()
         integrations = session.query(ThirdPartyIntegration).filter_by(user_id=user_id, is_active=True).all()
         session.close()
-        return integrations
+        
+        integrations_list = []
+        for integration in integrations:
+            integrations_list.append({
+                'id': integration.id,
+                'platform': integration.platform,
+                'created_at': integration.created_at.strftime('%Y-%m-%d %H:%M:%S') if integration.created_at else '未知'
+            })
+        
+        return True, integrations_list
     except Exception as e:
         print(f"获取用户集成失败: {str(e)}")
-        return []
+        return False, str(e)
 
 # 移除集成
 def remove_integration(integration_id):

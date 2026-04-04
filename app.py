@@ -371,7 +371,8 @@ st.markdown(
         
         /* 卡片式布局 */
         .card {{ 
-            background-color: {"#1e1e1e" if st.session_state.dark_mode else "#ffffff"};
+            background-color: {"#2d2d2d" if st.session_state.dark_mode else "#ffffff"};
+            border: 1px solid {"#444" if st.session_state.dark_mode else "#e0e0e0"};
             border-radius: 12px;
             padding: 1.5rem;
             margin: 1rem 0;
@@ -382,6 +383,7 @@ st.markdown(
         .card:hover {{ 
             box-shadow: 0 8px 16px rgba(0,0,0,0.15);
             transform: translateY(-2px);
+            border-color: {"#4CAF50" if st.session_state.dark_mode else "#4CAF50"};
         }}
         
         /* 提高链接和按钮的可访问性 */

@@ -64,6 +64,14 @@ if 'screen_reader' not in st.session_state:
     st.session_state.screen_reader = False
 if 'keyboard_shortcuts' not in st.session_state:
     st.session_state.keyboard_shortcuts = True
+if 'voice_navigation' not in st.session_state:
+    st.session_state.voice_navigation = False
+if 'text_to_speech' not in st.session_state:
+    st.session_state.text_to_speech = False
+if 'voice_input' not in st.session_state:
+    st.session_state.voice_input = False
+if 'eye_tracking' not in st.session_state:
+    st.session_state.eye_tracking = False
 if 'custom_shortcuts' not in st.session_state:
     st.session_state.custom_shortcuts = {
         "首页": "Alt+1",
@@ -315,13 +323,19 @@ high_contrast_colors = """
         color: #000000 !important;
         border: 3px solid #FFFFFF !important;
         font-weight: bold !important;
+        padding: 0.6rem 1.2rem !important;
+        border-radius: 8px !important;
     }
     .stTextInput>div>div>input, 
     .stTextArea>div>div>textarea, 
-    .stSelectbox>div>div>select {
+    .stSelectbox>div>div>select, 
+    .stDateInput>div>div>input, 
+    .stNumberInput>div>div>input {
         background-color: #000000 !important;
         color: #FFFFFF !important;
         border: 2px solid #FFFF00 !important;
+        padding: 0.6rem !important;
+        border-radius: 8px !important;
     }
     .stMarkdown {
         color: #FFFFFF !important;
@@ -329,16 +343,47 @@ high_contrast_colors = """
     .stExpander {
         background-color: #000000 !important;
         border: 2px solid #FFFFFF !important;
+        border-radius: 8px !important;
+    }
+    .stExpanderHeader {
+        background-color: #1a1a1a !important;
+        color: #FFFF00 !important;
     }
     h1, h2, h3, h4, h5, h6 {
         color: #FFFF00 !important;
+        font-weight: bold !important;
     }
     p, span, label {
         color: #FFFFFF !important;
+        font-weight: normal !important;
     }
     a {
         color: #00FFFF !important;
         text-decoration: underline !important;
+        font-weight: bold !important;
+    }
+    .stCheckbox>label {
+        color: #FFFFFF !important;
+    }
+    .stCheckbox [type="checkbox"] {
+        accent-color: #FFFF00 !important;
+        width: 18px !important;
+        height: 18px !important;
+    }
+    .stRadio>label {
+        color: #FFFFFF !important;
+    }
+    .stRadio [type="radio"] {
+        accent-color: #FFFF00 !important;
+        width: 18px !important;
+        height: 18px !important;
+    }
+    .stSlider>div>div>div>div {
+        background-color: #FFFF00 !important;
+    }
+    .stSlider>div>div>div>div>div {
+        background-color: #FFFF00 !important;
+        border: 2px solid #FFFFFF !important;
     }
 """
 

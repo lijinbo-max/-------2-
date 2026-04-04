@@ -414,26 +414,26 @@ def optimize_database():
     except Exception as e:
         return False, f"数据库优化失败: {str(e)}"
 
-# 切换到PostgreSQL数据库的函数
-def switch_to_postgresql(db_url):
-    """切换到PostgreSQL数据库"""
+# 切换到MySQL数据库的函数
+def switch_to_mysql(db_url):
+    """切换到MySQL数据库"""
     global engine, Session
     try:
-        # 创建PostgreSQL引擎
+        # 创建MySQL引擎
         from sqlalchemy import create_engine
-        engine = create_engine(db_url, echo=False)
+        engine = create_engine(db_url, echo=False, pool_pre_ping=True)
         Session = sessionmaker(bind=engine)
         
         # 创建所有表
         Base.metadata.create_all(engine)
-        return True, "成功切换到PostgreSQL数据库"
+        return True, "成功切换到MySQL数据库"
     except Exception as e:
-        return False, f"切换到PostgreSQL数据库失败: {str(e)}"
+        return False, f"切换到MySQL数据库失败: {str(e)}"
 
-# 云服务集成功能
+# 云服务集成功能 - 支持国内免费云服务
 class CloudStorage:
-    """云存储服务类"""
-    def __init__(self, provider='aws', **kwargs):
+    """云存储服务类 - 支持阿里云OSS、腾讯云COS、华为云OBS、七牛云Kodo、又拍云USS"""
+    def __init__(self, provider='阿里云OSS', **kwargs):
         """初始化云存储服务"""
         self.provider = provider
         self.kwargs = kwargs
@@ -443,35 +443,69 @@ class CloudStorage:
     def _init_client(self):
         """初始化云存储客户端"""
         try:
-            if self.provider == 'aws':
-                import boto3
-                self.client = boto3.client('s3', 
-                                         aws_access_key_id=self.kwargs.get('aws_access_key_id'),
-                                         aws_secret_access_key=self.kwargs.get('aws_secret_access_key'),
-                                         region_name=self.kwargs.get('region_name', 'us-east-1'))
-            elif self.provider == 'google':
-                from google.cloud import storage
-                self.client = storage.Client.from_service_account_json(self.kwargs.get('service_account_file'))
-            elif self.provider == 'azure':
-                from azure.storage.blob import BlobServiceClient
-                connection_string = self.kwargs.get('connection_string')
-                self.client = BlobServiceClient.from_connection_string(connection_string)
+            if self.provider == '阿里云OSS':
+                import oss2
+                auth = oss2.Auth(
+                    self.kwargs.get('access_key_id'),
+                    self.kwargs.get('access_key_secret')
+                )
+                self.client = oss2.Bucket(
+                    auth,
+                    self.kwargs.get('endpoint', 'oss-cn-hangzhou.aliyuncs.com'),
+                    self.kwargs.get('bucket_name', 'job-helper-backups')
+                )
+            elif self.provider == '腾讯云COS':
+                from qcloud_cos import CosConfig, CosS3Client
+                config = CosConfig(
+                    Region=self.kwargs.get('region', 'ap-guangzhou'),
+                    SecretId=self.kwargs.get('secret_id'),
+                    SecretKey=self.kwargs.get('secret_key')
+                )
+                self.client = CosS3Client(config)
+            elif self.provider == '华为云OBS':
+                from obs import ObsClient
+                self.client = ObsClient(
+                    access_key_id=self.kwargs.get('access_key'),
+                    secret_access_key=self.kwargs.get('secret_key'),
+                    server=self.kwargs.get('endpoint', 'obs.cn-north-4.myhuaweicloud.com')
+                )
+            elif self.provider == '七牛云Kodo':
+                from qiniu import Auth, BucketManager
+                self.auth = Auth(
+                    self.kwargs.get('access_key'),
+                    self.kwargs.get('secret_key')
+                )
+                self.bucket_domain = self.kwargs.get('bucket_domain')
+            elif self.provider == '又拍云USS':
+                import upyun
+                self.client = upyun.UpYun(
+                    self.kwargs.get('service_name'),
+                    username=self.kwargs.get('operator_name'),
+                    password=self.kwargs.get('operator_password')
+                )
         except Exception as e:
             print(f"初始化云存储客户端失败: {str(e)}")
     
     def upload_file(self, local_path, bucket_name, cloud_path):
         """上传文件到云存储"""
         try:
-            if self.provider == 'aws':
-                self.client.upload_file(local_path, bucket_name, cloud_path)
-            elif self.provider == 'google':
-                bucket = self.client.get_bucket(bucket_name)
-                blob = bucket.blob(cloud_path)
-                blob.upload_from_filename(local_path)
-            elif self.provider == 'azure':
-                blob_client = self.client.get_blob_client(container=bucket_name, blob=cloud_path)
-                with open(local_path, "rb") as data:
-                    blob_client.upload_blob(data)
+            if self.provider == '阿里云OSS':
+                self.client.put_object_from_file(cloud_path, local_path)
+            elif self.provider == '腾讯云COS':
+                self.client.upload_file(
+                    Bucket=bucket_name,
+                    LocalFilePath=local_path,
+                    Key=cloud_path
+                )
+            elif self.provider == '华为云OBS':
+                self.client.putFile(bucket_name, cloud_path, local_path)
+            elif self.provider == '七牛云Kodo':
+                from qiniu import put_file
+                token = self.auth.upload_token(bucket_name, cloud_path)
+                put_file(token, cloud_path, local_path)
+            elif self.provider == '又拍云USS':
+                with open(local_path, 'rb') as f:
+                    self.client.put(f'/{cloud_path}', f)
             return True, f"文件上传成功: {cloud_path}"
         except Exception as e:
             return False, f"文件上传失败: {str(e)}"
@@ -479,16 +513,30 @@ class CloudStorage:
     def download_file(self, bucket_name, cloud_path, local_path):
         """从云存储下载文件"""
         try:
-            if self.provider == 'aws':
-                self.client.download_file(bucket_name, cloud_path, local_path)
-            elif self.provider == 'google':
-                bucket = self.client.get_bucket(bucket_name)
-                blob = bucket.blob(cloud_path)
-                blob.download_to_filename(local_path)
-            elif self.provider == 'azure':
-                blob_client = self.client.get_blob_client(container=bucket_name, blob=cloud_path)
-                with open(local_path, "wb") as data:
-                    data.write(blob_client.download_blob().readall())
+            if self.provider == '阿里云OSS':
+                self.client.get_object_to_file(cloud_path, local_path)
+            elif self.provider == '腾讯云COS':
+                self.client.download_file(
+                    Bucket=bucket_name,
+                    Key=cloud_path,
+                    DestFilePath=local_path
+                )
+            elif self.provider == '华为云OBS':
+                resp = self.client.getObject(bucket_name, cloud_path, downloadPath=local_path)
+                if resp.status < 300:
+                    return True, f"文件下载成功: {local_path}"
+                else:
+                    return False, f"文件下载失败: {resp.errorMessage}"
+            elif self.provider == '七牛云Kodo':
+                import requests
+                base_url = f"http://{self.bucket_domain}/{cloud_path}"
+                private_url = self.auth.private_download_url(base_url, expires=3600)
+                response = requests.get(private_url)
+                with open(local_path, 'wb') as f:
+                    f.write(response.content)
+            elif self.provider == '又拍云USS':
+                with open(local_path, 'wb') as f:
+                    self.client.get(f'/{cloud_path}', f)
             return True, f"文件下载成功: {local_path}"
         except Exception as e:
             return False, f"文件下载失败: {str(e)}"
@@ -497,18 +545,30 @@ class CloudStorage:
         """列出云存储中的文件"""
         try:
             files = []
-            if self.provider == 'aws':
-                response = self.client.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+            if self.provider == '阿里云OSS':
+                for obj in oss2.ObjectIterator(self.client, prefix=prefix):
+                    files.append(obj.key)
+            elif self.provider == '腾讯云COS':
+                response = self.client.list_objects(
+                    Bucket=bucket_name,
+                    Prefix=prefix
+                )
                 if 'Contents' in response:
                     files = [obj['Key'] for obj in response['Contents']]
-            elif self.provider == 'google':
-                bucket = self.client.get_bucket(bucket_name)
-                blobs = bucket.list_blobs(prefix=prefix)
-                files = [blob.name for blob in blobs]
-            elif self.provider == 'azure':
-                container_client = self.client.get_container_client(bucket_name)
-                blobs = container_client.list_blobs(name_starts_with=prefix)
-                files = [blob.name for blob in blobs]
+            elif self.provider == '华为云OBS':
+                resp = self.client.listObjects(bucket_name, prefix=prefix)
+                if resp.status < 300:
+                    for content in resp.body.contents:
+                        files.append(content.key)
+            elif self.provider == '七牛云Kodo':
+                from qiniu import BucketManager
+                bucket = BucketManager(self.auth)
+                ret, eof, info = bucket.list(bucket_name, prefix=prefix)
+                if ret:
+                    files = [item['key'] for item in ret.get('items', [])]
+            elif self.provider == '又拍云USS':
+                res = self.client.getlist(f'/{prefix}')
+                files = [item['name'] for item in res]
             return True, files
         except Exception as e:
             return False, f"列出文件失败: {str(e)}"

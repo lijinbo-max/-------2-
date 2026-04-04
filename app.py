@@ -105,32 +105,59 @@ with st.sidebar.expander("数据库设置"):
         else:
             st.error(message)
     
-    # PostgreSQL设置
-    st.subheader("PostgreSQL设置")
-    postgresql_url = st.text_input("PostgreSQL连接URL", "postgresql://user:password@localhost:5432/job_helper")
-    if st.button("切换到PostgreSQL"):
-        from database import switch_to_postgresql
-        success, message = switch_to_postgresql(postgresql_url)
+    # MySQL数据库设置
+    st.subheader("MySQL数据库设置")
+    mysql_host = st.text_input("MySQL主机", "localhost")
+    mysql_port = st.text_input("MySQL端口", "3306")
+    mysql_database = st.text_input("MySQL数据库名", "job_helper")
+    mysql_user = st.text_input("MySQL用户名", "job_helper")
+    mysql_password = st.text_input("MySQL密码", type="password")
+    mysql_url = f"mysql+pymysql://{mysql_user}:{mysql_password}@{mysql_host}:{mysql_port}/{mysql_database}"
+    if st.button("切换到MySQL"):
+        from database import switch_to_mysql
+        success, message = switch_to_mysql(mysql_url)
         if success:
             st.success(message)
         else:
             st.error(message)
     
-    # 云服务设置
+    # 云服务设置（国内免费云服务）
     st.subheader("云服务设置")
-    cloud_provider = st.selectbox("云服务提供商", ["aws", "google", "azure"])
+    cloud_provider = st.selectbox(
+        "云服务提供商", 
+        ["阿里云OSS", "腾讯云COS", "华为云OBS", "七牛云Kodo", "又拍云USS"],
+        help="选择国内免费或低成本的云存储服务"
+    )
     bucket_name = st.text_input("存储桶名称", "job-helper-backups")
     
     # 云服务提供商特定设置
     cloud_kwargs = {}
-    if cloud_provider == "aws":
-        cloud_kwargs["aws_access_key_id"] = st.text_input("AWS Access Key ID")
-        cloud_kwargs["aws_secret_access_key"] = st.text_input("AWS Secret Access Key", type="password")
-        cloud_kwargs["region_name"] = st.text_input("AWS Region", "us-east-1")
-    elif cloud_provider == "google":
-        cloud_kwargs["service_account_file"] = st.text_input("Google Cloud Service Account File Path")
-    elif cloud_provider == "azure":
-        cloud_kwargs["connection_string"] = st.text_input("Azure Blob Storage Connection String")
+    if cloud_provider == "阿里云OSS":
+        st.info("阿里云OSS：新用户免费额度50GB存储，每月10万次请求")
+        cloud_kwargs["access_key_id"] = st.text_input("AccessKey ID")
+        cloud_kwargs["access_key_secret"] = st.text_input("AccessKey Secret", type="password")
+        cloud_kwargs["endpoint"] = st.text_input("Endpoint", "oss-cn-hangzhou.aliyuncs.com")
+        cloud_kwargs["region"] = st.text_input("地域", "cn-hangzhou")
+    elif cloud_provider == "腾讯云COS":
+        st.info("腾讯云COS：新用户免费额度50GB存储，每月10万次请求")
+        cloud_kwargs["secret_id"] = st.text_input("SecretId")
+        cloud_kwargs["secret_key"] = st.text_input("SecretKey", type="password")
+        cloud_kwargs["region"] = st.text_input("地域", "ap-guangzhou")
+    elif cloud_provider == "华为云OBS":
+        st.info("华为云OBS：新用户免费额度5GB存储，每月1000次请求")
+        cloud_kwargs["access_key"] = st.text_input("Access Key")
+        cloud_kwargs["secret_key"] = st.text_input("Secret Key", type="password")
+        cloud_kwargs["endpoint"] = st.text_input("Endpoint", "obs.cn-north-4.myhuaweicloud.com")
+    elif cloud_provider == "七牛云Kodo":
+        st.info("七牛云Kodo：每月10GB免费存储，100万次请求")
+        cloud_kwargs["access_key"] = st.text_input("AccessKey")
+        cloud_kwargs["secret_key"] = st.text_input("SecretKey", type="password")
+        cloud_kwargs["bucket_domain"] = st.text_input("Bucket域名")
+    elif cloud_provider == "又拍云USS":
+        st.info("又拍云USS：每月10GB免费存储")
+        cloud_kwargs["service_name"] = st.text_input("服务名称")
+        cloud_kwargs["operator_name"] = st.text_input("操作员名称")
+        cloud_kwargs["operator_password"] = st.text_input("操作员密码", type="password")
     
     # 云备份和恢复功能
     st.subheader("云备份和恢复")
@@ -243,25 +270,109 @@ with st.sidebar.expander("无障碍设置"):
 
 # 根据无障碍设置调整样式
 font_size_map = {
-    "小": "0.8rem",
-    "中": "1rem",
-    "大": "1.2rem",
-    "超大": "1.5rem",
-    "特大": "2rem"
+    "小": "14px",
+    "中": "16px",
+    "大": "18px",
+    "超大": "20px",
+    "特大": "24px"
+}
+
+font_size_title_map = {
+    "小": "18px",
+    "中": "20px",
+    "大": "24px",
+    "超大": "28px",
+    "特大": "32px"
 }
 
 font_style_map = {
     "默认": "",
-    "无衬线": "font-family: Arial, Helvetica, sans-serif;",
-    "衬线": "font-family: Georgia, 'Times New Roman', serif;",
-    "等宽": "font-family: 'Courier New', monospace;"
+    "无衬线": "font-family: 'Microsoft YaHei', Arial, Helvetica, sans-serif !important;",
+    "衬线": "font-family: 'SimSun', Georgia, 'Times New Roman', serif !important;",
+    "等宽": "font-family: 'Courier New', 'Consolas', monospace !important;"
 }
 
 contrast_map = {
     "正常": "",
-    "高对比度": "filter: contrast(1.2); background-color: #000; color: #fff;",
-    "低对比度": "filter: contrast(0.8);"
+    "高对比度": """
+        filter: contrast(1.5) !important;
+        -webkit-filter: contrast(1.5) !important;
+    """,
+    "低对比度": """
+        filter: contrast(0.7) !important;
+        -webkit-filter: contrast(0.7) !important;
+    """
 }
+
+# 高对比度模式下的颜色方案
+high_contrast_colors = """
+    .stApp {
+        background-color: #000000 !important;
+        color: #FFFFFF !important;
+    }
+    .stButton>button {
+        background-color: #FFFF00 !important;
+        color: #000000 !important;
+        border: 3px solid #FFFFFF !important;
+        font-weight: bold !important;
+    }
+    .stTextInput>div>div>input, 
+    .stTextArea>div>div>textarea, 
+    .stSelectbox>div>div>select {
+        background-color: #000000 !important;
+        color: #FFFFFF !important;
+        border: 2px solid #FFFF00 !important;
+    }
+    .stMarkdown {
+        color: #FFFFFF !important;
+    }
+    .stExpander {
+        background-color: #000000 !important;
+        border: 2px solid #FFFFFF !important;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #FFFF00 !important;
+    }
+    p, span, label {
+        color: #FFFFFF !important;
+    }
+    a {
+        color: #00FFFF !important;
+        text-decoration: underline !important;
+    }
+"""
+
+# 低对比度模式下的颜色方案
+low_contrast_colors = """
+    .stApp {
+        background-color: #F5F5F5 !important;
+        color: #666666 !important;
+    }
+    .stButton>button {
+        background-color: #CCCCCC !important;
+        color: #666666 !important;
+        border: 1px solid #999999 !important;
+    }
+    .stTextInput>div>div>input, 
+    .stTextArea>div>div>textarea, 
+    .stSelectbox>div>div>select {
+        background-color: #FFFFFF !important;
+        color: #666666 !important;
+        border: 1px solid #CCCCCC !important;
+    }
+    .stMarkdown {
+        color: #666666 !important;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #555555 !important;
+    }
+    p, span, label {
+        color: #666666 !important;
+    }
+    a {
+        color: #888888 !important;
+    }
+"""
 
 dark_mode_css = """
     background-color: #121212;
@@ -313,21 +424,42 @@ screen_reader_css = """
     th { background-color: #f2f2f2; font-weight: bold; }
 """
 
+# 根据当前对比度设置选择颜色方案
+current_contrast = st.session_state.contrast
+contrast_colors = ""
+if current_contrast == "高对比度":
+    contrast_colors = high_contrast_colors
+elif current_contrast == "低对比度":
+    contrast_colors = low_contrast_colors
+
 st.markdown(
     f"""
     <style>
-        /* 全局样式 */
-        body {{ 
-            font-size: {font_size_map[st.session_state.font_size]}; 
+        /* 全局样式 - 字体大小和样式 */
+        html, body, .stApp {{ 
+            font-size: {font_size_map[st.session_state.font_size]} !important; 
             {font_style_map[st.session_state.font_style]}
-            {contrast_map[st.session_state.contrast]}
-            {dark_mode_css if st.session_state.dark_mode else ""}
             transition: all 0.3s ease;
         }}
         
+        /* 标题字体大小 */
+        h1 {{ font-size: {font_size_title_map[st.session_state.font_size]} !important; }}
+        h2 {{ font-size: calc({font_size_title_map[st.session_state.font_size]} - 2px) !important; }}
+        h3 {{ font-size: calc({font_size_title_map[st.session_state.font_size]} - 4px) !important; }}
+        h4, h5, h6 {{ font-size: calc({font_size_title_map[st.session_state.font_size]} - 6px) !important; }}
+        
+        /* 对比度设置 */
+        {contrast_map[st.session_state.contrast]}
+        
+        /* 对比度颜色方案 */
+        {contrast_colors}
+        
+        /* 深色模式 */
+        {dark_mode_css if st.session_state.dark_mode else ""}
+        
         /* 现代按钮样式 */
         .stButton>button {{ 
-            font-size: {font_size_map[st.session_state.font_size]}; 
+            font-size: {font_size_map[st.session_state.font_size]} !important; 
             {font_style_map[st.session_state.font_style]}
             padding: 0.6rem 1.2rem;
             margin: 0.25rem 0;
